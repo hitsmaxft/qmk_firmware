@@ -1,0 +1,21 @@
+MCU = STM32F401
+BOARD = GENERIC_STM32_F401XC
+BOOTLOADER = tinyuf2
+
+BOOTMAGIC_ENABLE = no      # Enable Bootmagic Lite
+ENCODER_ENABLE = no
+UARTENABLE = yes
+EXTRAKEY_ENABLE = yes
+CONSOLE_ENABLE = no        # Console for debug
+NKRO_ENABLE = no          # Enable N-Key Rollover
+RGBLIGHT_ENABLE = no    # Enable keyboard RGB underglow
+WS2812_DRIVER = pwm
+RGB_MATRIX_ENABLE = no
+RGB_MATRIX_DRIVER = ws2812
+
+OPT_DEFS += -DCORTEX_ENABLE_WFI_IDLE=TRUE
+
+
+
+HAPTIC_ENABLE = yes
+HAPTIC_DRIVER += solenoid
