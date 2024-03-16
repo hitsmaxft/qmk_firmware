@@ -2,4 +2,5 @@
 
 #include "quantum.h"
 
+void Stm32_Rest2(void);
 
