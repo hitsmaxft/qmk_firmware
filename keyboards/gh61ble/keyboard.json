@@ -1,9 +1,12 @@
+// vim: set ft=hjson:
 {
     "manufacturer": "unknown",
     "keyboard_name": "gh61ble",
     "maintainer": "hitsmaxft",
     "bootloader": "stm32-dfu",
     "processor": "STM32F401",
+
+    "board": "BLACKPILL_STM32_F401",
 
     "usb": {
         "device_version": "0.0.1",
