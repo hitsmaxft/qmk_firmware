@@ -6,7 +6,7 @@
     "bootloader": "stm32-dfu",
     "processor": "STM32F401",
 
-    "board": "BLACKPILL_STM32_F401",
+    "board": "STM32F4GH61",
 
     "usb": {
         "device_version": "0.0.1",
