@@ -364,7 +364,7 @@
                                      PIN_MODE_INPUT(GPIOA_PIN4) |\
                                      PIN_MODE_INPUT(GPIOA_PIN5) | \
                                      PIN_MODE_INPUT(GPIOA_PIN6) | \
-                                     PIN_MODE_ALTERNATE(GPIOA_RGB) | \
+                                     PIN_MODE_OUTPUT(GPIOA_RGB) | \
                                      PIN_MODE_INPUT(GPIOA_PIN8) |           \
                                      PIN_MODE_INPUT(GPIOA_VBUS_FS) |        \
                                      PIN_MODE_ALTERNATE(GPIOA_OTG_FS_ID) |  \
