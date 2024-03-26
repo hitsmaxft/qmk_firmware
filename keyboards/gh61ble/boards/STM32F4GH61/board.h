@@ -155,8 +155,8 @@
 #define GPIOC_PIN13                 13U
 
 #define GPIOC_LED_ENABLE            14U
-
 #define GPIOC_OSC32_IN              14U
+
 #define GPIOC_OSC32_OUT             15U
 
 #define GPIOD_PIN0                  0U
@@ -415,7 +415,7 @@
                                      PIN_PUPDR_PULLUP(GPIOA_PIN4) |\
                                      PIN_PUPDR_PULLUP(GPIOA_PIN5) | \
                                      PIN_PUPDR_PULLUP(GPIOA_PIN6) |   \
-                                     PIN_PUPDR_PULLUP(GPIOA_RGB) |   \
+                                     PIN_PUPDR_FLOATING(GPIOA_RGB) |   \
                                      PIN_PUPDR_PULLUP(GPIOA_PIN8) |         \
                                      PIN_PUPDR_FLOATING(GPIOA_VBUS_FS) |    \
                                      PIN_PUPDR_FLOATING(GPIOA_OTG_FS_ID) |  \
@@ -431,7 +431,7 @@
                                      PIN_ODR_HIGH(GPIOA_PIN4) |     \
                                      PIN_ODR_HIGH(GPIOA_PIN5) |       \
                                      PIN_ODR_HIGH(GPIOA_PIN6) |       \
-                                     PIN_ODR_HIGH(GPIOA_RGB) |       \
+                                     PIN_ODR_LOW(GPIOA_RGB) |       \
                                      PIN_ODR_HIGH(GPIOA_PIN8) |             \
                                      PIN_ODR_HIGH(GPIOA_VBUS_FS) |          \
                                      PIN_ODR_HIGH(GPIOA_OTG_FS_ID) |        \
@@ -447,7 +447,7 @@
                                      PIN_AFIO_AF(GPIOA_PIN4, 0U) |  \
                                      PIN_AFIO_AF(GPIOA_PIN5, 0U) |    \
                                      PIN_AFIO_AF(GPIOA_PIN6, 0U) |    \
-                                     PIN_AFIO_AF(GPIOA_RGB, 5U))
+                                     PIN_AFIO_AF(GPIOA_RGB, 0U))
 #define VAL_GPIOA_AFRH              (PIN_AFIO_AF(GPIOA_PIN8, 0U) |          \
                                      PIN_AFIO_AF(GPIOA_VBUS_FS, 0U) |       \
                                      PIN_AFIO_AF(GPIOA_OTG_FS_ID, 10U) |    \
