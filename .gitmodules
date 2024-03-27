@@ -25,3 +25,9 @@
 	path = lib/lvgl
 	url = https://github.com/qmk/lvgl.git
 	branch = release/v8.2
+[submodule "keyboards/lily58-2040"]
+	path = keyboards/lily58-2040
+	url = git@github.com:hitsmaxft/lily58-2040-fw.git
+[submodule "keyboards/lily58_2040"]
+	path = keyboards/lily58_2040
+	url = git@github.com:hitsmaxft/lily58-2040-fw.git
