@@ -27,8 +27,8 @@
     },
     "ws2812": {
         "pin": "A7"
+        "driver": "pwm"
     },
-
     "matrix": { "rows": 5, "cols": 13 },
     "matrix_pins": {
         "cols": ["B2","B10","A8", "A3", "A4","A5", "A6", "B0", "B1",  "B12", "B13", "B14", "B15"],
