@@ -40,13 +40,9 @@
  * Board oscillators-related settings.
  * NOTE: LSE not fitted.
  */
-#if !defined(STM32_LSECLK)
 #define STM32_LSECLK                0U
-#endif
 
-#if !defined(STM32_HSECLK)
 #define STM32_HSECLK                16000000U
-#endif
 
 /*
  * Board voltages.
@@ -57,6 +53,7 @@
 /*
  * MCU type as defined in the ST header.
  */
+#define STM32F4xx_MCUCONF
 #define STM32F401xC
 
 /*
@@ -447,7 +444,7 @@
                                      PIN_AFIO_AF(GPIOA_PIN4, 0U) |  \
                                      PIN_AFIO_AF(GPIOA_PIN5, 0U) |    \
                                      PIN_AFIO_AF(GPIOA_PIN6, 0U) |    \
-                                     PIN_AFIO_AF(GPIOA_RGB, 0U))
+                                     PIN_AFIO_AF(GPIOA_RGB, 2U))
 #define VAL_GPIOA_AFRH              (PIN_AFIO_AF(GPIOA_PIN8, 0U) |          \
                                      PIN_AFIO_AF(GPIOA_VBUS_FS, 0U) |       \
                                      PIN_AFIO_AF(GPIOA_OTG_FS_ID, 10U) |    \
@@ -656,7 +653,7 @@
                                      PIN_PUPDR_PULLUP(GPIOC_PIN11) |        \
                                      PIN_PUPDR_PULLUP(GPIOC_CS43L22_SDIN) | \
                                      PIN_PUPDR_PULLUP(GPIOC_PIN13) |        \
-                                     PIN_PUPDR_FLOATING(GPIOC_LED_ENABLE) |   \
+                                     PIN_PUPDR_PULLUP(GPIOC_LED_ENABLE) |   \
                                      PIN_PUPDR_FLOATING(GPIOC_OSC32_OUT))
 #define VAL_GPIOC_ODR               (PIN_ODR_HIGH(GPIOC_OTG_FS_POWER_ON) |  \
                                      PIN_ODR_HIGH(GPIOC_PIN1) |             \

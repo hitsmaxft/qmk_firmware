@@ -1,4 +1,5 @@
 #include "gh61ble.h"
+#include "gpio.h"
 #include "print.h"
 
 void Stm32_Rest2(void) {
@@ -13,4 +14,5 @@ void bootloader_jump(void) {
 
 void keyboard_pre_init_user(void) {
     print("keyboard init");
+    palSetPad(GPIOC, 14);
 }
