@@ -91,7 +91,6 @@ void bootloader_jump(void) {
 
 void keyboard_pre_init_user(void) {
     print("keyboard init");
-    rccEnableAHB1()
 
     // enable dc pin  pc14
     palSetPad(GPIOC, 14);
