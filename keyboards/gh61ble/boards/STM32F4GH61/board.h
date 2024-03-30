@@ -1393,6 +1393,18 @@
 /* External declarations.                                                    */
 /*===========================================================================*/
 
+#define  STM32_HAS_GPIOA
+#define  STM32_HAS_GPIOB
+#define  STM32_HAS_GPIOC
+#undef   STM32_HAS_GPIOD
+#undef   STM32_HAS_GPIOE
+#undef   STM32_HAS_GPIOF
+#undef   STM32_HAS_GPIOG
+#define  STM32_HAS_GPIOH
+#undef   STM32_HAS_GPIOI
+#undef   STM32_HAS_GPIOJ
+#undef   STM32_HAS_GPIOK
+
 #if !defined(_FROM_ASM_)
 #ifdef __cplusplus
 extern "C" {
