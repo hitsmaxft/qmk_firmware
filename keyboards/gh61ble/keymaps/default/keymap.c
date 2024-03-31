@@ -34,7 +34,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
          KC_LCTL,    KC_LGUI,    KC_LALT,    KC_SPC,    KC_RALT,    MO(2),    MO(1), KC_RCTL
     ),
     [1] = LAYOUT_60_ansi(
-         /*reset*/QK_BOOTLOADER,  KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO, KC_NO,
+         /*reset*/QK_BOOTLOADER,  KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO, QK_DEBUG_TOGGLE,
          KC_NO,    KC_F23,  KC_F19,  KC_F20,  KC_F18,  /*BLE_DEL*/KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO,
          KC_NO,    KC_NO,   RGB_MODE_FORWARD,   RGB_TOG,   SAFE_RANGE,    KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO,  QK_REBOOT,
          KC_NO,    KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO,
