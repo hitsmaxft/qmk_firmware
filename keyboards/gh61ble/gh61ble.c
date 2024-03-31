@@ -29,6 +29,7 @@ void RCC_DeInit(void)
 
 }
 
+// 并不能 进 dfu 模式
 void Stm32_Rest2(void) {
     __set_FAULTMASK(1);
     NVIC_SystemReset();
@@ -91,7 +92,10 @@ void bootloader_jump(void) {
 
 void keyboard_pre_init_user(void) {
     print("keyboard init");
+}
 
+void keyboard_post_init_user(void) {
+    print("set pc14 to high");
     // enable dc pin  pc14
     palSetPad(GPIOC, 14);
 }
