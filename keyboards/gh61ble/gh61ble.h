@@ -6,6 +6,10 @@ void RCC_DeInit(void);
 
 void Stm32_Rest2(void);
 
+#ifndef STM32_BOOTLOADER_DUAL_BANK
+#    define STM32_BOOTLOADER_DUAL_BANK FALSE
+#endif
+
 #define __HAL_SYSCFG_REMAPMEMORY_SYSTEMFLASH()       do {SYSCFG->MEMRMP &= ~(SYSCFG_MEMRMP_MEM_MODE);\
                                                          SYSCFG->MEMRMP |= SYSCFG_MEMRMP_MEM_MODE_0;\
                                                         }while(0);

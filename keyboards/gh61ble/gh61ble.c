@@ -85,9 +85,9 @@ void JumpToBootloader(void)
 	}
 }
 
-void bootloader_jump(void) {
-    JumpToBootloader();
-};
+//void bootloader_jump(void) {
+//    JumpToBootloader();
+//};
 
 
 void keyboard_pre_init_user(void) {
