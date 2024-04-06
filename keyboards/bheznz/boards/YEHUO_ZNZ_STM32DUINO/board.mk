@@ -1,0 +1,8 @@
+#BOARDSRC = $(CHIBIOS)/os/hal/boards/STM32_F103_STM32DUINO/board.c $(BOARD_PATH)/board.c
+BOARDSRC = $(BOARD_PATH)/boards/YEHUO_ZNZ_STM32DUINO/board.c
+
+BOARDINC = $(BOARD_PATH)/boards/YEHUO_ZNZ_STM32DUINO
+
+# Shared variables
+ALLCSRC += $(BOARDSRC)
+ALLINC  += $(BOARDINC)
