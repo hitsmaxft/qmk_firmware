@@ -1,5 +1,10 @@
 # bheznz
 
+
+mcu STM32F103VET6
+
+100pin
+
 ![bheznz](imgur.com image replace me!)
 
 *A short description of the keyboard/project*
