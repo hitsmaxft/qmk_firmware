@@ -48,7 +48,6 @@
 #define GPIOB_LED_YELLOW        1
 #define GPIOB_LED_GREEN         8
 
-
 #define GPIOD_OSC_IN            0
 #define GPIOD_OSC_OUT           1
 
@@ -145,6 +144,7 @@
    such hardware. In which case it's better to not do anything.
 */
 /*
+ * znz enable usb pin is pd6 ,show set to 0
 #define usb_lld_connect_bus(usbp) palClearPad(GPIOB, GPIOB_USB_DISC)
 */
 #define usb_lld_connect_bus(usbp) palClearPad(GPIOD, 6);palSetPadMode(GPIOA, 12, PAL_MODE_INPUT);
