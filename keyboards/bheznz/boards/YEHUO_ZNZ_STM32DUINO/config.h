@@ -7,3 +7,4 @@
 
 // Value to place in RTC backup register 10 for instant reboot mode
 #define RTC_BOOTLOADER_JUST_UPLOADED 0x424D
+
