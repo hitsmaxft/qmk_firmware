@@ -7,8 +7,8 @@
 
     "features": {
         "bootmagic": true,
-        "command": false,
-        "console": false,
+        "command": true,
+        "console": true,
         "extrakey": true,
         "mousekey": true,
         "nkro": true
@@ -19,7 +19,9 @@
             ["D15", "D1"], ["E8", "E10"], ["E12", "E14"], ["D8", "D10"]
         ]
     },
-
+    "ws2812" : {
+        "driver":"bitbang"
+    },
     "rgb_matrix": {
         "animations":{
            "solid_splash": true,
