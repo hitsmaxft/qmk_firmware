@@ -95,9 +95,10 @@
 /*
  * Port B setup.
  * Everything input with pull-up except:
+ * PB6 PB7 SPI output for eeprom
  * PB10    - Push Pull output  (USB switch).
  */
-#define VAL_GPIOBCRL            0x88888888      /*  PB7...PB0 */
+#define VAL_GPIOBCRL            0x77888888      /*  PB7...PB0 */
 #define VAL_GPIOBCRH            0x88888388      /* PB15...PB8 */
 #define VAL_GPIOBODR            0xFFFFFFFF
 
