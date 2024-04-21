@@ -48,9 +48,6 @@
 #define GPIOB_LED_YELLOW        1
 #define GPIOB_LED_GREEN         8
 
-#define GPIOD_OSC_IN            0
-#define GPIOD_OSC_OUT           1
-
 /* In case your board has a "USB enable" hardware
    controlled by a pin, define it here. (It could be just
    a 1.5k resistor connected to D+ line.)
@@ -162,8 +159,6 @@
 
 // Value to place in RTC backup register 10 for instant reboot mode
 #define RTC_BOOTLOADER_JUST_UPLOADED 0x424D
-
-#define HAL_USE_PWM true
 
 
 #if !defined(_FROM_ASM_)

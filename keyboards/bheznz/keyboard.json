@@ -6,52 +6,59 @@
     "bootloader": "stm32duino",
 
     "features": {
-        "bootmagic": true,
+        "bootmagic": false,
         "command": true,
         "console": true,
-        "extrakey": true,
-        "mousekey": true,
-        "nkro": true
+        "extrakey": false,
+        "mousekey": false,
+        "nkro": false
     },
 
     "matrix_pins": {
         "direct": [
-            ["D15", "D1"], ["E8", "E10"], ["E12", "E14"], ["D8", "D10"]
+            ["D15", "D1"],
+            ["E8", "E10"],
+            ["E12", "E14"],
+            ["D8", "D10"]
         ]
     },
-    "ws2812" : {
-        "driver":"bitbang"
-    },
+
     "rgb_matrix": {
-        "animations":{
+        "driver": "ws2812"
+
+        , "led_flush_limit": 40
+
+        ,"animations":{
            "solid_splash": true,
            "solid_multisplash": true,
            "solid_reactive_wide": true
-        },
-        "driver": "ws2812",
-        "layout": [
-            {"matrix": [3, 1], "x":   0, "y":  12, "flags": 4},
-            {"matrix": [2, 1], "x":  17, "y":  12, "flags": 4},
-            {"matrix": [1, 1], "x":  34, "y":  12, "flags": 4},
-            {"matrix": [0, 1], "x":  56,  "y": 12, "flags": 4},
-
-            {"matrix": [3, 1], "x":   0, "y":  16, "flags": 4},
-            {"matrix": [2, 1], "x":  17, "y":  16, "flags": 4},
-            {"matrix": [1, 1], "x":  34, "y":  16, "flags": 4},
-            {"matrix": [0, 1], "x":  56, "y":  16, "flags": 4},
-
-
+        }
+        ,"layout": [
+            {"matrix": [3, 0], "x":   0,  "y": 0, "flags": 4},
             {"matrix": [3, 0], "x":   0, "y":  4, "flags": 4},
+
+            {"matrix": [3, 1], "x":   0, "y":  12, "flags": 4},
+            {"matrix": [3, 1], "x":   0, "y":  16, "flags": 4},
+
+            {"matrix": [2, 0], "x":  17,  "y": 0, "flags": 4},
             {"matrix": [2, 0], "x":  17, "y":  4, "flags": 4},
+
+            {"matrix": [2, 1], "x":  17, "y":  12, "flags": 4},
+            {"matrix": [2, 1], "x":  17, "y":  16, "flags": 4},
+
+            {"matrix": [1, 0], "x":  34,  "y": 0, "flags": 4},
             {"matrix": [1, 0], "x":  34, "y":  4, "flags": 4},
+
+            {"matrix": [1, 1], "x":  34, "y":  16, "flags": 4},
+            {"matrix": [1, 1], "x":  34, "y":  12, "flags": 4},
+
+            {"matrix": [0, 0], "x":  56,  "y": 0, "flags": 4},
             {"matrix": [0, 0], "x":  56,  "y": 4, "flags": 4},
 
-            {"matrix": [3, 0], "x":   0,  "y": 0, "flags": 4},
-            {"matrix": [2, 0], "x":  17,  "y": 0, "flags": 4},
-            {"matrix": [1, 0], "x":  34,  "y": 0, "flags": 4},
-            {"matrix": [0, 0], "x":  56,  "y": 0, "flags": 4}
-        ],
-        "led_flush_limit": 40
+            {"matrix": [0, 1], "x":  56,  "y": 12, "flags": 4},
+            {"matrix": [0, 1], "x":  56, "y":  16, "flags": 4}
+
+        ]
     },
 
     "url": "",
