@@ -1,4 +1,5 @@
 MCU = STM32F103
+
 BOARD = STM32_F103_STM32DUINO
 
 # BOARD = YEHUO_ZNZ_STM32DUINO
@@ -7,7 +8,16 @@ BOARD = STM32_F103_STM32DUINO
 # Options to pass to dfu-util when flashing
 # DFU_ARGS = -d 1EAF:0003 -a 1 -R
 # DFU_SUFFIX_ARGS = -v 1EAF -p 0003
+
 RGB_MATRIX_ENABLE = yes
 
+WS2812_DRIVER_REQUIRED = yes
+
+WS2812_DRIVER = bitbang
+
+EEPROM_DRIVER = i2c
+
 SRC += usb_init.c
+
+
 

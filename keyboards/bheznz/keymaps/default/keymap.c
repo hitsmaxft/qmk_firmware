@@ -12,7 +12,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
      * └───┴───┴───┴───┘
      */
     [0] = LAYOUT_ortho_2x4(
-        LT(2, KC_Z),    KC_S,    KC_D,    KC_F,
+        LT(2, KC_A),    KC_S,    KC_D,    KC_F,
         LT(1, KC_Z),    KC_X,    KC_C,    KC_V
     ),
     [1] = LAYOUT_ortho_2x4(
@@ -21,6 +21,6 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     ),
     [2] = LAYOUT_ortho_2x4(
         _______,    RGB_TOG,    RGB_HUI,    RGB_HUD,
-        _______,    QK_DEBUG_TOGGLE,    RGB_VAI,   RGB_VAD
+        QK_BOOT,    QK_DEBUG_TOGGLE,    RGB_VAI,   RGB_VAD
     ),
 };
