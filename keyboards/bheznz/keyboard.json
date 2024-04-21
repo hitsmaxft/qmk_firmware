@@ -29,9 +29,8 @@
         , "led_flush_limit": 40
 
         ,"animations":{
-           "solid_splash": true,
-           "solid_multisplash": true,
-           "solid_reactive_wide": true
+           "typing_heatmap": true,
+           "multisplash" : true
         }
         ,"layout": [
             {"matrix": [3, 0], "x":   0,  "y": 0, "flags": 4},
