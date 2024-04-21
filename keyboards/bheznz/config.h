@@ -7,11 +7,35 @@
  * TIM4_UP channel 7
  */
 
+/**
+ *
+ * 24C02/24C04
+ * Two-Wire Serial EEPROM
+ * Preliminary datasheet 2K (256 X 8)
+ * 1/15 MRD
+ * Internally Organized 256 X 8 (2K)
+ * Write Protect Pin for Hardware Data Protection
+ * 8-byte Page (2K)
+ *
+ * Modes
+ *
+ * Self-timed Write Cycle (5 ms max)
+ * – Endurance: 1 Million Write Cycles
+ * – Data Retention: 100 Years
+ *
+ * The 24C02 / 24C04 provides 2048/4096 bits of
+ * serial electrically erasable and programmable
+ * read-only memory (EEPROM) organized as
+ * 256/512 words of 8 bits each The device is
+ * optimized for use in many industrial
+ */
+
 #define STM32_ONBOARD_EEPROM_SIZE  256
-#    define EXTERNAL_EEPROM_BYTE_COUNT 256
+#    define EXTERNAL_EEPROM_I2C_BASE_ADDRESS 0b1010000
+#    define EXTERNAL_EEPROM_BYTE_COUNT 256 //words
 #    define EXTERNAL_EEPROM_PAGE_SIZE 8
 #    define EXTERNAL_EEPROM_ADDRESS_SIZE 2
-#    define EXTERNAL_EEPROM_WRITE_TIME 5
+#    define EXTERNAL_EEPROM_WRITE_TIME 5 //ms
 
 
 #define WS2812_DI_PIN B0
