@@ -34,7 +34,15 @@ const PALConfig pal_default_config =
 };
 #endif
 
-__attribute__((weak)) void enter_bootloader_mode_if_requested(void) {}
+__attribute__((weak)) void enter_bootloader_mode_if_requested(void) {
+}
+
+__attribute__((weak)) void enter_bootloader_mode_next_reset(void) {
+
+   //Set backup register DR10 to enter bootloader on reset
+   BKP->DR10 = RTC_BOOTLOADER_FLAG;
+
+}
 
 /*
  * Early initialization code.
@@ -53,9 +61,6 @@ void __early_init(void) {
 void boardInit(void) {
    //JTAG-DP Disabled and SW-DP Enabled
    AFIO->MAPR |= AFIO_MAPR_SWJ_CFG_JTAGDISABLE;
-   //Set backup register DR10 to enter bootloader on reset
-   BKP->DR10 = RTC_BOOTLOADER_FLAG;
-
    //enable usb port pd6 to low
    palClearPad(GPIOD, 6);
 }
