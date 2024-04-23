@@ -61,3 +61,8 @@
 
 #define RGB_MATRIX_LED_COUNT 16
 
+
+// for stm32f103
+
+#define USE_GPIOV1
+#define USE_I2CV1
