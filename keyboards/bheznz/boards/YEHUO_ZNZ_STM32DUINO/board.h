@@ -38,6 +38,9 @@
  */
 #define STM32F103xE
 
+//STM32F101xE, STM32F103xE for Performance High Density devices.
+#define STM32F10X_HD
+
 /*
  * IO pins assignments
  */
