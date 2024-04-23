@@ -1,6 +1,20 @@
 #include "bheznz.h"
 
 #include "ws2812.h"
+#include "debug.h"
+#include "print.h"
+#include "rgb_matrix.h"
+
+void _znz_eeconfig_debug_rgb_matrix(void) {
+    dprintf("rgb_matrix_config EEPROM\n");
+    dprintf("rgb_matrix_config.enable = %d\n", rgb_matrix_config.enable);
+    dprintf("rgb_matrix_config.mode = %d\n", rgb_matrix_config.mode);
+    dprintf("rgb_matrix_config.hsv.h = %d\n", rgb_matrix_config.hsv.h);
+    dprintf("rgb_matrix_config.hsv.s = %d\n", rgb_matrix_config.hsv.s);
+    dprintf("rgb_matrix_config.hsv.v = %d\n", rgb_matrix_config.hsv.v);
+    dprintf("rgb_matrix_config.speed = %d\n", rgb_matrix_config.speed);
+    dprintf("rgb_matrix_config.flags = %d\n", rgb_matrix_config.flags);
+}
 
 // show debug
 rgb_led_t leds[4] = {
@@ -38,9 +52,8 @@ __attribute__((weak)) bool process_record_user(uint16_t keycode, keyrecord_t *re
     switch (keycode) {
         case QK_DEBUG_TOGGLE:
             if (record->event.pressed) {
-                ws2812_setleds(leds, 4);
-                return true;
-            }            return true; // Let QMK send the enter press/release events
+                _znz_eeconfig_debug_rgb_matrix();
+            }
         default:
             return true; // Process all other keycodes normally
     }
