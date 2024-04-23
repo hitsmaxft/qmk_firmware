@@ -64,5 +64,5 @@
 
 // for stm32f103
 
-#define USE_GPIOV1
-#define USE_I2CV1
+#define I2C1_CLOCK_SPEED 400000 /* 400000 */
+#define I2C1_DUTY_CYCLE 2
