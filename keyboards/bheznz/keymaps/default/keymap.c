@@ -16,11 +16,11 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         LT(1, KC_Z),    KC_X,    KC_C,    KC_V
     ),
     [1] = LAYOUT_ortho_2x4(
-        _______,    RGB_SAI,    RGB_HUI,    RGB_HUD,
-        _______,    RGB_SAD,    RGB_MOD,    RGB_RMOD
+        _______,    RGB_VAI,    RGB_HUI,    RGB_HUD,
+        _______,    RGB_VAD,    RGB_MOD,    RGB_RMOD
     ),
     [2] = LAYOUT_ortho_2x4(
-        _______,    RGB_TOG,    RGB_HUI,    RGB_HUD,
+        _______,    RGB_TOG,    _______,    KC_ZNZ_DEBUG,
         QK_BOOT,    QK_DEBUG_TOGGLE,    RGB_VAI,   RGB_VAD
     ),
 };

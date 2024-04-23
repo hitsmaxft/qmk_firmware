@@ -50,10 +50,11 @@ void keyboard_post_init_user(void) {
 
 __attribute__((weak)) bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     switch (keycode) {
-        case QK_DEBUG_TOGGLE:
+        case KC_ZNZ_DEBUG:
             if (record->event.pressed) {
                 _znz_eeconfig_debug_rgb_matrix();
             }
+            return false;
         default:
             return true; // Process all other keycodes normally
     }
