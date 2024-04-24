@@ -41,21 +41,26 @@
 
 #define WS2812_DI_PIN B0
 
-/*
 
 #define WS2812_PWM_DRIVER        PWMD3                  // default: PWMD2
                                                         // dma channel
-#define WS2812_PWM_CHANNEL       2                      // default: 2
 
-#define WS2812_PWM_PAL_MODE      1                      // Pin "alternate function", see the respective datasheet for the appropriate values for your MCU. default: 2
+#define ZNZ_DMA_TIM3_CH2 2
+#define ZNZ_DMA_TIM3_UP 3
+
+#define WS2812_PWM_CHANNEL      ZNZ_DMA_TIM3_CH2        // default: 2
+
+//gpiov1 no need
+//#define WS2812_PWM_PAL_MODE      2                    // Pin "alternate function", see the respective datasheet for the appropriate values for your MCU. default: 2
                                                         //
 #define WS2812_PWM_DMA_STREAM        STM32_DMA1_STREAM3     // DMA Stream for TIMx_UP, see the respective reference manual for the appropriate values for your MCU.
 #define WS2812_PWM_DMA_CHANNEL       3                      // DMA Channel for TIMx_UP, see the respective reference manual for the appropriate values for your MCU.
                                                             //
-//#define WS2812_PWM_DMAMUX_ID         STM32_DMAMUX1_TIM4_UP  // DMAMUX configuration for TIMx_UP -- only required if your MCU has a DMAMUX peripheral, see the respective reference manual for the appropriate values for your MCU.
+//use af_pp
+#undef  WS2812_EXTERNAL_PULLUP
 
- */
-                                                            //
+//#define WS2812_PWM_DMAMUX_ID         STM32_DMAMUX1_TIM3_UP  // DMAMUX configuration for TIMx_UP -- only required if your MCU has a DMAMUX peripheral, see the respective reference manual for the appropriate values for your MCU.
+
 
 #define RGBLIGHT_LED_COUNT 16
 
