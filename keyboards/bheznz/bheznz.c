@@ -17,35 +17,23 @@ void _znz_eeconfig_debug_rgb_matrix(void) {
 }
 
 // show debug
-rgb_led_t leds[4] = {
-    {
+rgb_led_t leds[16] = {
+    [0 ... 15] = {
         .g=255,
         .r=0,
         .b=0,
     }
-    , {
-        .g=0,
-        .r=255,
-        .b=0,
-    }
-    , {
-        .g=0,
-        .r=0,
-        .b=255,
-    }
-    , {
-        .g=0,
-        .r=0,
-        .b=0,
-    }
-
 };
 void keyboard_post_init_user(void) {
   // Customise these values to desired behaviour
   debug_enable=true;
   debug_matrix=true;
+
+
   //debug_keyboard=true;
   //debug_mouse=true;
+
+  rgb_matrix_set_color_all(0,0,0);
 }
 
 __attribute__((weak)) bool process_record_user(uint16_t keycode, keyrecord_t *record) {
