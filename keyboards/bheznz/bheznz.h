@@ -5,6 +5,6 @@
 void pre_kb_init_user(void);
 void setup_znz_usb(void);
 
-enum AP2KeyCodes {
+enum ZNZKeyCodes {
     KC_ZNZ_DEBUG = QK_KB_0
 };

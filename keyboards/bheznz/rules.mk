@@ -19,5 +19,4 @@ EEPROM_DRIVER = i2c
 
 SRC += usb_init.c
 
-
-
+OPT_DEFS += -DSTM32_DMA_REQUIRED=TRUE
