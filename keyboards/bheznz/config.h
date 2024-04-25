@@ -48,11 +48,10 @@
 #define ZNZ_DMA_CHN_TIM3_CH3 2
 #define ZNZ_DMA_CHN_TIM3_UP 3
 
-#define WS2812_PWM_CHANNEL      ZNZ_DMA_CHN_TIM3_CH3    // default: 2
+#define WS2812_PWM_CHANNEL      3    // default: 2
 
 //noused in gpiov1
 //#define WS2812_PWM_PAL_MODE      2                    // Pin "alternate function", see the respective datasheet for the appropriate values for your MCU. default: 2
-                                                        //
 #define WS2812_PWM_DMA_STREAM        STM32_DMA1_STREAM3     // DMA Stream for TIMx_UP, see the respective reference manual for the appropriate values for your MCU.
                                                             // always map to zero under dmav1
 #define WS2812_PWM_DMA_CHANNEL       3                      // DMA Channel for TIMx_UP, see the respective reference manual for the appropriate values for your MCU.
