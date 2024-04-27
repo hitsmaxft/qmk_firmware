@@ -27,3 +27,7 @@ void Stm32_Rest2(void);
 #define APP_ADDR    0x8004000          /* APP地址 */
 
 void JumpToBootloader(void);
+
+enum GH61BLEKeyCodes {
+    GK_DEBUG = QK_KB_0
+};

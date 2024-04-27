@@ -1,7 +1,28 @@
 // Copyright 2023 QMK
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "rgb_matrix.h"
 #include QMK_KEYBOARD_H
+
+
+#include "rgb_matrix_types.h"
+
+
+
+// Function to revert an array of Position
+void GH61_revertArray(led_point_t arr[60], int size) {
+    int start = 0;
+    int end = size - 1;
+    while (start < end) {
+        // Swap the start and end elements
+        led_point_t temp = arr[start];
+        arr[start] = arr[end];
+        arr[end] = temp;
+
+        start++;
+        end--;
+    }
+}
 
 
 // clang-format off
@@ -34,11 +55,11 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
          KC_LCTL,    KC_LGUI,    KC_LALT,    KC_SPC,    KC_RALT,    MO(2),    MO(1), KC_RCTL
     ),
     [1] = LAYOUT_60_ansi(
-         /*reset*/QK_BOOTLOADER,  KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO, QK_DEBUG_TOGGLE,
+         /*reset*/QK_BOOTLOADER,  GK_DEBUG,   KC_NO,   KC_NO,   KC_NO,   KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO, QK_DEBUG_TOGGLE,
          KC_NO,    KC_F23,  KC_F19,  KC_F20,  KC_F18,  /*BLE_DEL*/KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO,
          KC_NO,    KC_NO,   RGB_MODE_FORWARD,   RGB_TOG,   SAFE_RANGE,    KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO,  QK_REBOOT,
          KC_NO,    KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO,
-         KC_NO,    KC_NO,   KC_NO,   RGB_TOG,   KC_NO,   KC_NO,  KC_NO,  KC_NO
+         KC_NO,    KC_NO,   KC_NO,   RGB_TOG,   GK_DEBUG,   RGB_MODE_FORWARD,  KC_NO,  KC_NO
     ),
     [2] = LAYOUT_60_ansi(
          QK_BOOT,  KC_1,   KC_2,   KC_3,   KC_4,      KC_5,   KC_6,  KC_7,   KC_8,   KC_9,    KC_0,    KC_MINS, KC_EQL, KC_BSPC,
@@ -127,75 +148,83 @@ led_config_t g_led_config = {
            NO_LED,
            NO_LED
            }
-    }, {
-        { 0,  0 }, //  0  Esc
-        {17,  0 }, //  1  1
-        {34,  0 }, //  2  2
-        {52,  0 }, //  3  3
-        {69,  0 }, //  4  4
-        {86,  0 }, //  5  5
-        {103, 0 }, //  6  6
-        {121, 0 }, //  7  7
-        {138, 0 }, //  8  8
-        {155, 0 }, //  9  9
-        {172, 0 }, //  10 0
-        {190, 0 }, //  11 -
-        {207, 0 }, //  12 =
-        {224, 0 }, //  13 Backspace
-        { 0,  16}, //  14  TAB
-        {17,  16}, //  15  Q
-        {34,  16}, //  16  W
-        {52,  16}, //  17  E
-        {69,  16}, //  18  R
-        {86,  16}, //  19  T
-        {103, 16}, //  20  Y
-        {121, 16}, //  21  U
-        {138, 16}, //  22  I
-        {155, 16}, //  23  O
-        {172, 16}, //  24  P
-        {190, 16}, //  25  [
-        {207, 16}, //  26  ]
-        {224, 16}, //  27  |
-        { 0,  32}, //  14  CPS
-        {17,  32}, //  15  A
-        {34,  32}, //  16  S
-        {52,  32}, //  17  D
-        {69,  32}, //  18  F
-        {86,  32}, //  19  G
-        {103, 32}, //  20  H
-        {121, 32}, //  21  J
-        {138, 32}, //  22  K
-        {155, 32}, //  23  L
-        {172, 32}, //  24  ;
-        //{190, 32}, //  25  '
-        {207, 32}, //  25  '
-        {224, 32}, //  27  ENT
-        { 0,  48}, //  14  LSHT
-        {20,  48}, //  15  Z
-        {41,  48}, //  16  X
-        {61,  48}, //  17  C
-        {81,  48}, //  18  V
-        {102, 48}, //  19  B
-        {122, 48}, //  20  N
-        {143, 48}, //  21  M
-        {163, 48}, //  22  <
-        {183, 48}, //  23  >
-        {203, 48}, //  24  /
-        {224, 48}, //  25  RSHT
-        { 0,  64}, //  14  CTR
-        {17,  64}, //  15  WIN
-        {34,  64}, //  16  ALT
-        {95,  64}, //  17  SPE
-        {155, 64}, //  18  ALT
-        {172, 64}, //  19  FN
-        {190, 32}, //  20  GUI
-        {207, 32}, //  21  CTR
-    }, {
+    }
+    , {
+        {224, 64}, //  21  CTR
+            {210, 64}, //  20  GUI
+            {172, 64}, //  19  FN
+            {180, 64}, //  18  ALT
+            {102,  64}, //  17  SPE
+            {34,  64}, //  16  ALT
+            {17,  64}, //  15  WIN
+            { 0,  64}, //  14  CTR
+                                 //
+                                 //
+            {220, 48}, //  25  RSHT
+            {203, 48}, //  24  /
+            {183, 48}, //  23  >
+            {163, 48}, //  22  <
+            {143, 48}, //  21  M
+            {122, 48}, //  20  N
+            {102, 48}, //  19  B
+            {81,  48}, //  18  V
+            {61,  48}, //  17  C
+            {41,  48}, //  16  X
+            {20,  48}, //  15  Z
+            { 0,  48}, //  14  LSHT
+                                  //
+            {224, 32}, //  27  ENT
+            {207, 32}, //  25  '
+                                  //{190, 32}, //  25  '
+            {172, 32}, //  24  ;
+            {155, 32}, //  23  L
+            {138, 32}, //  22  K
+            {121, 32}, //  21  J
+            {103, 32}, //  20  H
+            {86,  32}, //  19  G
+            {69,  32}, //  18  F
+            {52,  32}, //  17  D
+            {34,  32}, //  16  S
+            {17,  32}, //  15  A
+            { 0,  32}, //  14  CPS
+                       //
+            {224, 16}, //  27  |
+            {207, 16}, //  26  ]
+            {190, 16}, //  25  [
+            {172, 16}, //  24  P
+            {155, 16}, //  23  O
+            {138, 16}, //  22  I
+            {121, 16}, //  21  U
+            {103, 16}, //  20  Y
+            {86,  16}, //  19  T
+            {69,  16}, //  18  R
+            {52,  16}, //  17  E
+            {34,  16}, //  16  W
+            {17,  16}, //  15  Q
+            { 0,  16}, //  14  TAB
+                       //
+            {224, 0 }, //  13 Backspace
+            {207, 0 }, //  12 =
+            {190, 0 }, //  11 -
+            {172, 0 }, //  10 0
+            {155, 0 }, //  9  9
+            {138, 0 }, //  8  8
+            {121, 0 }, //  7  7
+            {103, 0 }, //  6  6
+            {86,  0 }, //  5  5
+            {69,  0 }, //  4  4
+            {52,  0 }, //  3  3
+            {34,  0 }, //  2  2
+            {17,  0 }, //  1  1
+            { 0,  0 }, //  0  Esc
+    }
+    , {
         1, 1, 1, 1, 1, 1, 1, 1, 4, 4, 4, 4, 4, 4, 4,
-        4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-        4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-        4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+            4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+            4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+            4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
     }
 };
+
 
 #endif

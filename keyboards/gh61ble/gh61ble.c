@@ -1,6 +1,11 @@
 #include "gh61ble.h"
 #include "gpio.h"
 #include "print.h"
+#include "ws2812.h"
+#include "debug.h"
+#include "print.h"
+#include "rgb_matrix.h"
+
 
 /**
   * @brief  Resets the RCC clock configuration to the default reset state.
@@ -98,4 +103,27 @@ void keyboard_post_init_user(void) {
     print("set pc14 to high");
     // enable dc pin  pc14
     palSetPad(GPIOC, 14);
+  // Customise these values to desired behaviour
+  debug_enable=true;
+  debug_matrix=true;
+
+
+  //debug_keyboard=true;
+  //debug_mouse=true;
+}
+
+__attribute__((weak)) bool process_record_user(uint16_t keycode, keyrecord_t *record) {
+    switch (keycode) {
+        case GK_DEBUG:
+            if (record->event.pressed) {
+                rgb_matrix_set_color(0, 255,0,255);
+                rgb_matrix_set_color(1, 255,0,255);
+                rgb_matrix_set_color(2, 255,0,255);
+                dprint("set all white");
+            }
+            return false;
+        default:
+            return true; // Process all other keycodes normally
+    }
+    return true;
 }
