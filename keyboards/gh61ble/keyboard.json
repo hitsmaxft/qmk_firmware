@@ -19,15 +19,14 @@
     "rgb_matrix": {
         "driver": "ws2812",
         "animations": {
-            "alphas_mods": true,
+            "typing_heatmap": true,
             "breathing": true,
-            "cycle_left_right": false
         },
         "default": { "on":true }
     },
     "ws2812": {
         "pin": "A7"
-        "driver": "pwm"
+        "driver": "bitbang"
     },
     "matrix": { "rows": 5, "cols": 13 },
     "matrix_pins": {
