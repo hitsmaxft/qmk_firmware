@@ -5,7 +5,6 @@
     "maintainer": "hitsmaxft",
     "bootloader": "stm32-dfu",
     "processor": "STM32F401",
-
     "board": "STM32F4GH61",
 
     "usb": {
@@ -41,6 +40,10 @@
         "extrakey": true,
         "mousekey": true,
         "nkro": false
+    },
+
+    "eeprom": {
+        "drivier":"wear_leveling"
     },
 
     "community_layouts": ["60_ansi"],

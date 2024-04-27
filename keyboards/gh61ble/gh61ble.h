@@ -29,5 +29,24 @@ void Stm32_Rest2(void);
 void JumpToBootloader(void);
 
 enum GH61BLEKeyCodes {
-    GK_DEBUG = QK_KB_0
+    KC_AP2_BT1 = QK_KB_0,
+    /*兼容 ap2 keymap*/
+    KC_AP2_BT2,
+    KC_AP2_BT3,
+    KC_AP2_BT4,
+    KC_AP2_BT_UNPAIR,
+    KC_AP2_USB,
+    KC_AP_LED_ON,
+    KC_AP_LED_OFF,
+    KC_AP_LED_TOG,
+    KC_AP_LED_NEXT_PROFILE,
+    KC_AP_LED_PREV_PROFILE,
+    KC_AP_LED_NEXT_INTENSITY,
+    KC_AP_LED_SPEED,
+    KC_AP_RGB_VAI,
+    KC_AP_RGB_VAD,
+    KC_AP_RGB_TOG,
+    KC_AP_RGB_MOD,
+    KC_AP2_IAP,
+    GK_DEBUG
 };
