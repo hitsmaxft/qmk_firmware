@@ -1,56 +1,56 @@
 // vim: set ft=hjson:
 {
     "manufacturer": "tb_xiyekeke",
-    "keyboard_name": "gh61ble",
-    "maintainer": "hitsmaxft",
-    "bootloader": "stm32-dfu",
-    "processor": "STM32F401",
-    "board": "STM32F4GH61",
+        "keyboard_name": "gh61ble",
+        "maintainer": "hitsmaxft",
+        "bootloader": "stm32-dfu",
+        "processor": "STM32F401",
+        "board": "STM32F4GH61",
 
-    "usb": {
-        "device_version": "1.0.0",
-        "vid": "0x1915",
-        "pid": "0x520B"
-    },
-
-    "diode_direction": "ROW2COL",
-
-    "rgb_matrix": {
-        "driver": "ws2812",
-        "animations": {
-            "typing_heatmap": true,
-            "breathing": true,
+        "usb": {
+            "device_version": "1.0.0",
+            "vid": "0x1915",
+            "pid": "0x520B"
         },
-        "default": { "on":true }
-    },
-    "ws2812": {
-        "pin": "A7"
-        "driver": "bitbang"
-    },
-    "matrix": { "rows": 5, "cols": 13 },
-    "matrix_pins": {
-        "cols": ["B2","B10","A8", "A3", "A4","A5", "A6", "B0", "B1",  "B12", "B13", "B14", "B15"],
-        "rows": ["B4", "B3", "B6","B7", "B8"]
-    },
 
-    "features": {
-        "bootmagic": true,
-        "command": true,
-        "console": true,
-        "extrakey": true,
-        "mousekey": true,
-        "nkro": false
-    },
+        "diode_direction": "ROW2COL",
 
-    "eeprom": {
-        "drivier":"wear_leveling"
-    },
+        "rgb_matrix": {
+            "driver": "ws2812",
+            "animations": {
+                "typing_heatmap": true,
+                "breathing": true,
+            },
+            "default": { "on":true }
+        },
+        "ws2812": {
+            "pin": "A7"
+                "driver": "bitbang"
+        },
+        "matrix": { "rows": 5, "cols": 13 },
+        "matrix_pins": {
+            "cols": ["B2","B10","A8", "A3", "A4","A5", "A6", "B0", "B1",  "B12", "B13", "B14", "B15"],
+            "rows": ["B4", "B3", "B6","B7", "B8"]
+        },
 
-    "community_layouts": ["60_ansi"],
+        "features": {
+            "bootmagic": true,
+            "command": true,
+            "console": true,
+            "extrakey": true,
+            "mousekey": true,
+            "nkro": false
+        },
 
-    "layouts": {
-        "LAYOUT_60_ansi": {
-            "layout": [
+        "eeprom": {
+            "drivier":"wear_leveling"
+        },
+
+        "community_layouts": ["60_ansi"],
+
+        "layouts": {
+            "LAYOUT_60_ansi": {
+                "layout": [
                 {"matrix": [0, 0], "x": 0, "y": 0},
                 {"matrix": [0, 1], "x": 1, "y": 0},
                 {"matrix": [0, 2], "x": 2, "y": 0},
@@ -64,7 +64,7 @@
                 {"matrix": [0, 10], "x": 10, "y": 0},
                 {"matrix": [0, 11], "x": 11, "y": 0},
                 {"matrix": [0, 12], "x": 12, "y": 0},
-                {"matrix": [4, 9], "x": 13, "y": 4, "w": 2},
+                {"matrix": [4, 9], "x": 13, "y": 0, "w": 2},
 
                 {"matrix": [1, 0], "x": 0, "y": 1, "w": 1.5},
                 {"matrix": [1, 1], "x": 1.5, "y": 1},
@@ -79,7 +79,7 @@
                 {"matrix": [1, 10], "x": 10.5, "y": 1},
                 {"matrix": [1, 11], "x": 11.5, "y": 1},
                 {"matrix": [1, 12], "x": 12.5, "y": 1},
-                {"matrix": [4, 10], "x": 14, "y": 4, "w": 1.25}
+                {"matrix": [4, 10], "x": 13.5, "y": 1, "w": 1.5},
 
                 {"matrix": [2, 0], "x": 0, "y": 2, "w": 1.75},
                 {"matrix": [2, 1], "x": 1.75, "y": 2},
@@ -115,8 +115,8 @@
                 {"matrix": [4, 4], "x": 10, "y": 4, "w": 1.25},
                 {"matrix": [4, 5], "x": 11.25, "y": 4, "w": 1.25},
                 {"matrix": [4, 6], "x": 12.5, "y": 4, "w": 1.25},
-                {"matrix": [4, 7], "x": 13.75, "y": 4, "w": 1.25},
-            ]
+                {"matrix": [4, 7], "x": 13.75, "y": 4, "w": 1.25}
+                ]
+            }
         }
-    }
 }
