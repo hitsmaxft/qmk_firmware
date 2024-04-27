@@ -21,7 +21,9 @@
                 "typing_heatmap": true,
                 "breathing": true,
             },
-            "default": { "on":true }
+            "default": {
+                "on":true
+            }
         },
         "ws2812": {
             "pin": "A7"
