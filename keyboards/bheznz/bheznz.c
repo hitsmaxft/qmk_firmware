@@ -4,6 +4,9 @@
 
 #include "action_layer.h"
 #include "info_config.h"
+#include "bootloader.h"
+#include "config.h"
+
 #include "ws2812.h"
 #include "debug.h"
 #include "print.h"
@@ -31,6 +34,7 @@ rgb_led_t leds[16] = {
         .b=0,
     }
 };
+
 void keyboard_post_init_user(void) {
     // Customise these values to desired behaviour
     debug_enable=false;
@@ -41,11 +45,19 @@ void keyboard_post_init_user(void) {
     rgb_matrix_set_color_all(0,0,0);
 }
 
-bool process_record_user(uint16_t keycode, keyrecord_t *record) {
-    if (record->event.pressed) {
-        add_keycode_to_history(keycode);
-    }
 
+void bootloader_jump(void) {
+    //写入 bootloader 标记, 下次重启自动进入bootloader
+    BKP->DR10 = RTC_BOOTLOADER_FLAG;
+    NVIC_SystemReset();
+}
+
+void mcu_reset(void) {
+    BKP->DR10 = RTC_BOOTLOADER_FLAG;
+    NVIC_SystemReset();
+}
+
+ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     switch (keycode) {
         case KC_ZNZ_DEBUG:
             if (record->event.pressed) {
