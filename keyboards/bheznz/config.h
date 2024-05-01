@@ -1,6 +1,5 @@
 #pragma once
 
-
 /**
  * pb7
  * TIM4_CH2 Channel 4
