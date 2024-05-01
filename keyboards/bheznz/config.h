@@ -30,17 +30,16 @@
  * optimized for use in many industrial
  */
 
+/*
 #define STM32_ONBOARD_EEPROM_SIZE  256
 #    define EXTERNAL_EEPROM_I2C_BASE_ADDRESS 0b10100000
 #    define EXTERNAL_EEPROM_BYTE_COUNT 256 //words
 #    define EXTERNAL_EEPROM_PAGE_SIZE 8
 #    define EXTERNAL_EEPROM_ADDRESS_SIZE 1
 #    define EXTERNAL_EEPROM_WRITE_TIME 5 //ms
+*/
 
 #define DEBUG_EEPROM_OUTPUT
-
-#define WS2812_DI_PIN B0
-
 
 // ouput on pb0 tim3ch3
 #define WS2812_PWM_DRIVER        PWMD3
@@ -59,7 +58,6 @@
 #undef  WS2812_EXTERNAL_PULLUP
 
 //#define WS2812_PWM_DMAMUX_ID         STM32_DMAMUX1_TIM3_UP  // DMAMUX configuration for TIMx_UP -- only required if your MCU has a DMAMUX peripheral, see the respective reference manual for the appropriate values for your MCU.
-
 
 #define RGBLIGHT_LED_COUNT 16
 #define RGB_MATRIX_LED_COUNT 16

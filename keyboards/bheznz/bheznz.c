@@ -28,11 +28,8 @@ void keyboard_post_init_user(void) {
   // Customise these values to desired behaviour
   debug_enable=true;
   debug_matrix=true;
-
-
   //debug_keyboard=true;
   //debug_mouse=true;
-
   rgb_matrix_set_color_all(0,0,0);
 }
 
@@ -56,13 +53,13 @@ bool oled_task_user(void) {
 
     switch (get_highest_layer(layer_state)) {
         case 0:
-            oled_write_P(PSTR("Default\n"), false);
+            oled_write_P(PSTR("Default\n[A] [S] [D] [F]\n[Z] [X] [C] [V]\n"), false);
             break;
         case 1:
-            oled_write_P(PSTR("FN\n"), false);
+            oled_write_P(PSTR("Layer 1\n__ RV+ RH+ RH-\n__ RV- RM+ RM-\n"), false);
             break;
         case 2:
-            oled_write_P(PSTR("ADJ\n"), false);
+            oled_write_P(PSTR("Layer 2\n___ RTG ___ DGB\nQBT DSW RV+ RV-\n"), false);
             break;
         default:
             // Or use the write_ln shortcut over adding '\n' to the end of your string
