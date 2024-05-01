@@ -59,18 +59,23 @@ bool oled_task_user(void) {
             oled_write_P(PSTR("Layer 1\n__ RV+ RH+ RH-\n__ RV- RM+ RM-\n"), false);
             break;
         case 2:
-            oled_write_P(PSTR("Layer 2\n___ RTG ___ DGB\nQBT DSW RV+ RV-\n"), false);
+            oled_write_P(PSTR("Layer 2\n___ RTG ___ DGB\nQBT DSW RS+ RS-\n"), false);
             break;
         default:
             // Or use the write_ln shortcut over adding '\n' to the end of your string
             oled_write_ln_P(PSTR("Undefined"), false);
     }
 
+
+    char buffer[12];
+    sprintf(buffer, "rgbmode %d", rgb_matrix_config.mode);
+    oled_write_ln_P(PSTR(buffer), false);
+    oled_write_ln_P(PSTR("\n"), false);
     // Host Keyboard LED Status
-    led_t led_state = host_keyboard_led_state();
-    oled_write_P(led_state.num_lock ? PSTR("NUM ") : PSTR("    "), false);
-    oled_write_P(led_state.caps_lock ? PSTR("CAP ") : PSTR("    "), false);
-    oled_write_P(led_state.scroll_lock ? PSTR("SCR ") : PSTR("    "), false);
+    //led_t led_state = host_keyboard_led_state();
+    //oled_write_P(led_state.num_lock ? PSTR("NUM ") : PSTR("    "), false);
+    //oled_write_P(led_state.caps_lock ? PSTR("CAP ") : PSTR("    "), false);
+    //oled_write_P(led_state.scroll_lock ? PSTR("SCR ") : PSTR("    "), false);
 
     return false;
 }

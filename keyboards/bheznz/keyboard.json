@@ -35,7 +35,7 @@
         ,"animations":{
            "typing_heatmap": true,
            "multisplash" : true,
-           "breathing" : true
+           "hue_breathing" : true
         }
         ,"layout": [
             {"matrix": [3, 0], "x":   0,  "y": 0, "flags": 4},

@@ -25,6 +25,6 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     ),
     [2] = LAYOUT_ortho_2x4(
         _______,    RGB_TOG,    _______,    KC_ZNZ_DEBUG,
-        QK_BOOT,    QK_DEBUG_TOGGLE,    RGB_VAI,   RGB_VAD
+        QK_BOOT,    QK_DEBUG_TOGGLE,    RGB_SPI,   RGB_SPD
     ),
 };
