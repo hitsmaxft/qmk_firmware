@@ -30,3 +30,9 @@ Enter the bootloader in 3 ways:
 * **Bootmagic reset**: Hold down the key at (0,0) in the matrix (usually the top left key or Escape) and plug in the keyboard
 * **Physical reset button**: Briefly press the button on the back of the PCB - some may have pads you must short instead
 * **Keycode in layout**: Press the key mapped to `QK_BOOT` if it is available
+
+## notes about this board
+
+eeprom build  in but using i2c1 , 2Kbit , 256B
+
+> since chibios not support use i2c2 with  `i2c_master.c` , on board eeprom should be disabled.
