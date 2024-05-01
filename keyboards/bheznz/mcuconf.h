@@ -14,8 +14,6 @@
 #undef STM32_I2C_USE_I2C1
 #define STM32_I2C_USE_I2C1 TRUE
 
-
-
 // for stm32f103
 
 #define I2C1_CLOCK_SPEED 400000 /* 400000 */
