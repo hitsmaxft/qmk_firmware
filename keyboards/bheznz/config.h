@@ -65,17 +65,11 @@
 #define RGB_MATRIX_LED_COUNT 16
 
 
-// for stm32f103
-
-#define I2C1_CLOCK_SPEED 400000 /* 400000 */
-#define I2C1_DUTY_CYCLE 2
-
-
 
 // for oled display
 #define OLED_IC  OLED_IC_SSD1306
 
-#define OLED_CS_PIN B10
-#define OLED_DC_PIN B11
+#define OLED_CS_PIN B6
+#define OLED_DC_PIN B7
+#define OLED_DISPLAY_128X64 TRUE
 
-#define OLED_TRANSPORT_I2C TRUE
