@@ -2,9 +2,12 @@
 #include "bheznz.h"
 
 
-char* keycode_to_ascii(uint16_t keycode) {
-    static char ascii[2] = {' ', ' '}; // 初始化为全空字符串
+/** a simple keycode to ascii converter **/
 
+char* keycode_to_ascii(uint16_t keycode) {
+
+    //reuse char array
+    static char ascii[3] = {' ', ' ', '\0'}; // 初始化为全空字符串
         ascii[0] = ' ';
     if (keycode >= KC_A && keycode <= KC_Z) {
         ascii[1] = 'A' + ((keycode - KC_A) % 26);
@@ -63,19 +66,20 @@ void add_keycode_to_history(uint16_t keycode) {
 
 
 // 打印最近的三个按键代码
-void sprint_recent_keycodes(char * buffer) {
-    // 为字符串结束符预留空间，以及每个键码对应两个字符（包括空格或特殊符号）
-    char *buff_ptr = buffer; // 指针，用于追踪当前写入的位置
+// TODO limit buffer size
+void sprint_recent_keycodes(char * buffer, uint8_t size) {
+    char *buff_ptr = buffer;
+    *buff_ptr = '\0';
+
     for (int i = 0; i < KEYCODE_HISTORY_SIZE; i++) {
         // 获取键码对应的字符
         char *key_char = keycode_to_ascii(keycode_history[i]);
-        // 格式化并存储到buffer中，使用sprintf返回写入字符的个数准备下一次写入
-        buff_ptr += sprintf(buff_ptr, "%s ", key_char);
+        // move pointer
+        buff_ptr += snprintf(buff_ptr, 4, "%s ", key_char);
     }
-    if( buff_ptr != buffer ) { // 如果buffer非空，退回最后的空格写入字符串的结束符
-     *(buff_ptr-1) = '0';
-    } else {
-        *buff_ptr = '0'; // 如果buffer为空（没有键码历史），则写入字符串结束符
+    if( buff_ptr != buffer ) {
+        //remove last space
+        *(buff_ptr-1) = '\0';
     }
 }
 

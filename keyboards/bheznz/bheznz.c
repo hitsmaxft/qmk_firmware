@@ -5,8 +5,6 @@
 #include "print.h"
 #include "rgb_matrix.h"
 
-
-
 void _znz_eeconfig_debug_rgb_matrix(void) {
     dprintf("rgb_matrix_config EEPROM\n");
     dprintf("rgb_matrix_config.enable = %d\n", rgb_matrix_config.enable);
@@ -27,12 +25,12 @@ rgb_led_t leds[16] = {
     }
 };
 void keyboard_post_init_user(void) {
-  // Customise these values to desired behaviour
-  debug_enable=true;
-  debug_matrix=true;
-  //debug_keyboard=true;
-  //debug_mouse=true;
-  rgb_matrix_set_color_all(0,0,0);
+    // Customise these values to desired behaviour
+    debug_enable=true;
+    debug_matrix=true;
+    //debug_keyboard=true;
+    //debug_mouse=true;
+    rgb_matrix_set_color_all(0,0,0);
 }
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
@@ -48,7 +46,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             }
             return false;
         default:
-                print_recent_keycodes();
+            print_recent_keycodes();
             return true; // Process all other keycodes normally
     }
     return true;
@@ -71,17 +69,17 @@ bool oled_task_user(void) {
             break;
         default:
             // Or use the write_ln shortcut over adding '\n' to the end of your string
-            oled_write_ln_P(PSTR("Undefined"), false);
+            oled_write_P(PSTR("Undefined\n"), false);
     }
 
 
-    char buffer[12];
-    sprintf(buffer, "rgbmode %d", rgb_matrix_config.mode);
-    oled_write_ln_P(PSTR(buffer), false);
-    oled_write_ln_P(PSTR("\n"), false);
-    //sprint_recent_keycodes(buffer);
-    //oled_write_ln_P(PSTR(buffer), false);
-    oled_write_ln_P(PSTR("\n"), false);
+    char buffer[24];
+    sprintf(buffer, "RgbMode %d\n", rgb_matrix_config.mode);
+    oled_write_P(PSTR(buffer), false);
+    sprint_recent_keycodes(buffer, 24);
+    dprintf("oled history string '%s'\n" ,  buffer);
+    oled_write_P(PSTR(buffer), false);
+ //   oled_write_ln_P(PSTR("\n"), false);
     // Host Keyboard LED Status
     //led_t led_state = host_keyboard_led_state();
     //oled_write_P(led_state.num_lock ? PSTR("NUM ") : PSTR("    "), false);
