@@ -38,18 +38,17 @@ void keyboard_post_init_user(void) {
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     if (record->event.pressed) {
         add_keycode_to_history(keycode);
-        if (debug_enable) {
-            print_recent_keycodes();
-        }
     }
 
     switch (keycode) {
         case KC_ZNZ_DEBUG:
             if (record->event.pressed) {
                 _znz_eeconfig_debug_rgb_matrix();
+                print_recent_keycodes();
             }
             return false;
         default:
+                print_recent_keycodes();
             return true; // Process all other keycodes normally
     }
     return true;
@@ -79,6 +78,9 @@ bool oled_task_user(void) {
     char buffer[12];
     sprintf(buffer, "rgbmode %d", rgb_matrix_config.mode);
     oled_write_ln_P(PSTR(buffer), false);
+    oled_write_ln_P(PSTR("\n"), false);
+    //sprint_recent_keycodes(buffer);
+    //oled_write_ln_P(PSTR(buffer), false);
     oled_write_ln_P(PSTR("\n"), false);
     // Host Keyboard LED Status
     //led_t led_state = host_keyboard_led_state();
