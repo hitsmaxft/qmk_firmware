@@ -5,6 +5,8 @@
 #include "print.h"
 #include "rgb_matrix.h"
 
+
+
 void _znz_eeconfig_debug_rgb_matrix(void) {
     dprintf("rgb_matrix_config EEPROM\n");
     dprintf("rgb_matrix_config.enable = %d\n", rgb_matrix_config.enable);
@@ -33,7 +35,14 @@ void keyboard_post_init_user(void) {
   rgb_matrix_set_color_all(0,0,0);
 }
 
-__attribute__((weak)) bool process_record_user(uint16_t keycode, keyrecord_t *record) {
+bool process_record_user(uint16_t keycode, keyrecord_t *record) {
+    if (record->event.pressed) {
+        add_keycode_to_history(keycode);
+        if (debug_enable) {
+            print_recent_keycodes();
+        }
+    }
+
     switch (keycode) {
         case KC_ZNZ_DEBUG:
             if (record->event.pressed) {

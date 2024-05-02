@@ -18,6 +18,7 @@ OLED_ENABLE = yes
 OLED_TRANSPORT = i2c
 OLED_DRIVER = ssd1306
 
-SRC += usb_init.c
+SRC += usb_init.c kc.c
 
 OPT_DEFS += -DSTM32_DMA_REQUIRED=TRUE
+
