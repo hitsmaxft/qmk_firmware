@@ -1,19 +1,4 @@
 {
-    "manufacturer": "hitsmaxft",
-    "keyboard_name": "bheznz",
-    "maintainer": "hitsmaxft",
-
-    "bootloader": "stm32duino",
-
-    "features": {
-        "bootmagic": false,
-        "command": true,
-        "console": true,
-        "extrakey": false,
-        "mousekey": false,
-        "nkro": false
-    },
-
     "matrix_pins": {
         "direct": [
             ["D15", "D1"],
@@ -23,10 +8,6 @@
         ]
     },
 
-    "ws2812":{
-        "pin":"B0",
-        "driver":"pwm"
-    },
     "rgb_matrix": {
         "driver": "ws2812"
 
@@ -65,13 +46,6 @@
         ]
     },
 
-    "url": "",
-
-    "usb": {
-        "device_version": "1.0.0",
-        "pid": "0x0000",
-        "vid": "0xFEED"
-    },
     "layouts": {
         "LAYOUT_ortho_2x4": {
             "layout": [

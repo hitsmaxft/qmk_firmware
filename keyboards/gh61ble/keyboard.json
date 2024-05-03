@@ -45,7 +45,7 @@
         },
 
         "eeprom": {
-            "drivier":"wear_leveling"
+            "drivier":"vendor"
         },
 
         "community_layouts": ["60_ansi"],
