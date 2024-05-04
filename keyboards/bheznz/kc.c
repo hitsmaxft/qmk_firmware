@@ -7,7 +7,7 @@ char* keycode_to_ascii(uint16_t keycode) {
 
     switch (keycode) {
         case 0x0000: return "NO";
-        case 0x0001: return "TRAN";
+        case 0x0001: return "____";
         case 0x0004: return "A";
         case 0x0005: return "B";
         case 0x0006: return "C";
@@ -87,6 +87,58 @@ char* keycode_to_ascii(uint16_t keycode) {
         case 0x0050: return "LFT";
         case 0x0051: return "DWN";
         case 0x0052: return "UP";
+        case 0x7820: return "rTG";
+        case 0x7821: return "rF";
+        case 0x7822: return "rR";
+        case 0x7823: return "rHUI";
+        case 0x7824: return "rHUD";
+        case 0x7825: return "rSAI";
+        case 0x7826: return "rSAD";
+        case 0x7827: return "rVAI";
+        case 0x7828: return "rVAD";
+        case 0x7829: return "rSPI";
+        case 0x782A: return "rSPD";
+        case 0x782B: return "rPLN";
+        case 0x782C: return "rBTH";
+        case 0x782D: return "rRBW";
+        case 0x782E: return "rSWL";
+        case 0x782F: return "rSNK";
+        case 0x7830: return "rKNI";
+        case 0x7831: return "rXMS";
+        case 0x7832: return "rGRD";
+        case 0x7833: return "rTST";
+        case 0x7834: return "rTWN";
+        case 0x7C00: return "BLD";
+        case 0x7C01: return "RBOOT";
+        case 0x7C02: return "DBGTL";
+        case 0x7C03: return "CLRERP";
+        case 0x00CD: return "MUP";
+        case 0x00CE: return "MDWN";
+        case 0x00CF: return "MLFT";
+        case 0x00D0: return "MRGT";
+        case 0x00D1: return "MB1";
+        case 0x00D2: return "MB2";
+        case 0x00D3: return "MB3";
+        case 0x00D4: return "MB4";
+        case 0x00D5: return "MB5";
+        case 0x00D6: return "MB6";
+        case 0x00D7: return "MB7";
+        case 0x00D8: return "MB8";
+        case 0x00D9: return "MWU";
+        case 0x00DA: return "MWD";
+        case 0x00DB: return "MWL";
+        case 0x00DC: return "MWR";
+        case 0x00DD: return "MA0";
+        case 0x00DE: return "MA1";
+        case 0x00DF: return "MA2";
+        case 0x00E0: return "LCTL";
+        case 0x00E1: return "LSFT";
+        case 0x00E2: return "LALT";
+        case 0x00E3: return "LGUI";
+        case 0x00E4: return "RCTL";
+        case 0x00E5: return "RSFT";
+        case 0x00E6: return "RALT";
+        case 0x00E7: return "RGUI";
         default: str[0] = ' '; str[1] = ' '; return str; // Unknown keycode
     }
 }
