@@ -66,11 +66,11 @@ void snprintf_keymap(uint16_t layer, char* buffer, uint8_t size) {
         for (int c=0 ; c < MATRIX_COLS; c++) {
             uint16_t kc = keymaps[layer][r][c];
             char* str = keycode_to_ascii(kc);
-            output += snprintf(output, size , "[%s] ", str);
+            output += snprintf(output, size , "%4s|", str);
         }
-        output += snprintf(output, size , "\n");
+        *(output-1)  = '\n';
+
     }
-    *output = '\0';
 }
 
 
@@ -111,7 +111,7 @@ bool oled_task_user(void) {
     sprint_recent_keycodes(buffer, 24);
     dprintf("oled history string '%s'\n" ,  buffer);
     oled_write_P(PSTR(buffer), false);
- //   oled_write_ln_P(PSTR("\n"), false);
+    //   oled_write_ln_P(PSTR("\n"), false);
     // Host Keyboard LED Status
     //led_t led_state = host_keyboard_led_state();
     //oled_write_P(led_state.num_lock ? PSTR("NUM ") : PSTR("    "), false);
