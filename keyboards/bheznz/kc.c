@@ -266,7 +266,7 @@ void sprint_recent_keycodes(char * buffer, uint8_t size) {
         // 获取键码对应的字符
         char *key_char = keycode_to_ascii(keycode_history[i]);
         // move pointer
-        buff_ptr += snprintf(buff_ptr, 4, "%s ", key_char);
+        buff_ptr += snprintf(buff_ptr, 6, "%4s ", key_char);
     }
     if( buff_ptr != buffer ) {
         //remove last space
