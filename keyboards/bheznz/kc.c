@@ -1,3 +1,4 @@
+#include "keycodes.h"
 #include "quantum.h"
 #include "bheznz.h"
 
@@ -52,6 +53,24 @@ char* keycode_to_ascii(uint16_t keycode) {
                 break;
             case RGB_VAD :
                 return "RV-";
+                break;
+            case RGB_HUI :
+                return "RH+";
+                break;
+            case RGB_HUD :
+                return "RH-";
+                break;
+            case RGB_SPI :
+                return "RS+";
+                break;
+            case RGB_SPD :
+                return "RS-";
+                break;
+            case QK_BOOT :
+                return "BOOT";
+                break;
+            case QK_DEBUG_TOGGLE:
+                return "DEBG";
                 break;
             default:
                 ascii[0] = '-'; // 对于不表示打印字符的按键，返回空字符串
