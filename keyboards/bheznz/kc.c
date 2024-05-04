@@ -38,6 +38,22 @@ char* keycode_to_ascii(uint16_t keycode) {
             case KC_CAPS_LOCK:
                 ascii[1] = (char[]){'n', 0x1B, 0x08, 't', ' ', '-', '=', '[', ']', '\\', '#', ';', '\'', '`', ',', '.', '/'}[keycode - KC_ENTER];
                 break;
+            case RGB_TOG:
+                return "@T";
+                break;
+            case RGB_MOD:
+                return "@+";
+                break;
+            case RGB_RMOD:
+                return "@-";
+                break;
+            case RGB_VAI :
+                return "%+";
+                break;
+            case RGB_VAD :
+                return "%-";
+                break;
+
             default:
                 ascii[0] = '-'; // 对于不表示打印字符的按键，返回空字符串
                 ascii[1] = '-'; // 对于不表示打印字符的按键，返回空字符串

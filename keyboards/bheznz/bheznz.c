@@ -1,9 +1,16 @@
 #include "bheznz.h"
+#include <stdint.h>
+#include <stdio.h>
 
+#include "action_layer.h"
+#include "info_config.h"
 #include "ws2812.h"
 #include "debug.h"
 #include "print.h"
 #include "rgb_matrix.h"
+
+
+extern const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS];
 
 void _znz_eeconfig_debug_rgb_matrix(void) {
     dprintf("rgb_matrix_config EEPROM\n");
@@ -52,28 +59,53 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     return true;
 }
 
+void snprintf_keymap(uint16_t layer, char* buffer, uint8_t size) {
+    char* output = buffer;
+
+    for (int r = 0; r < MATRIX_ROWS; r++) {
+        for (int c=0 ; c < MATRIX_COLS; c++) {
+            uint16_t kc = keymaps[layer][r][c];
+            char* str = keycode_to_ascii(kc);
+            output += snprintf(output, size , "[%s] ", str);
+        }
+        output += snprintf(output, size , "\n");
+    }
+    *output = '\0';
+}
+
+
 #ifdef OLED_ENABLE
 bool oled_task_user(void) {
-    // Host Keyboard Layer Status
+
+
+    // MATRIX_COLS
+    // MATRIX_ROWS
+    //
+    //
     oled_write_P(PSTR("Layer: "), false);
 
-    switch (get_highest_layer(layer_state)) {
+
+    char buffer[200];
+    uint16_t layer_id = get_highest_layer(layer_state);
+    switch (layer_id) {
         case 0:
-            oled_write_P(PSTR("Default\n[A] [S] [D] [F]\n[Z] [X] [C] [V]\n"), false);
+            oled_write_P(PSTR("Default\n"), false);
             break;
         case 1:
-            oled_write_P(PSTR("Layer 1\n__ RV+ RH+ RH-\n__ RV- RM+ RM-\n"), false);
+            oled_write_P(PSTR("1\n"), false);
             break;
         case 2:
-            oled_write_P(PSTR("Layer 2\n___ RTG ___ DGB\nQBT DSW RS+ RS-\n"), false);
+            oled_write_P(PSTR("2\n"), false);
             break;
         default:
             // Or use the write_ln shortcut over adding '\n' to the end of your string
             oled_write_P(PSTR("Undefined\n"), false);
     }
 
+    snprintf_keymap(layer_id, buffer, 200);
 
-    char buffer[24];
+    oled_write_P(PSTR(buffer), false);
+
     sprintf(buffer, "RgbMode %d\n", rgb_matrix_config.mode);
     oled_write_P(PSTR(buffer), false);
     sprint_recent_keycodes(buffer, 24);
