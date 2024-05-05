@@ -19,15 +19,15 @@
             "driver": "ws2812",
             "animations": {
                 "typing_heatmap": true,
-                "breathing": true,
+                "breathing": true
             },
             "default": {
                 "on":true
             }
         },
         "ws2812": {
-            "pin": "A7"
-                "driver": "pwm"
+            "pin": "A7",
+            "driver": "pwm"
         },
         "matrix": { "rows": 5, "cols": 13 },
         "matrix_pins": {
