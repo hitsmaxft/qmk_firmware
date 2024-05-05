@@ -33,8 +33,8 @@ rgb_led_t leds[16] = {
 };
 void keyboard_post_init_user(void) {
     // Customise these values to desired behaviour
-    debug_enable=true;
-    debug_matrix=true;
+    debug_enable=false;
+    debug_matrix=false;
     //debug_keyboard=true;
     //debug_mouse=true;
     rgb_matrix_set_color_all(0,0,0);
@@ -52,6 +52,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 _znz_eeconfig_debug_rgb_matrix();
                 print_recent_keycodes();
             }
+            debug_enable=!debug_enable;
             return false;
         default:
             print_recent_keycodes();

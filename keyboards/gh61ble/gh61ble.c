@@ -96,13 +96,17 @@ void JumpToBootloader(void)
 
 
 void keyboard_pre_init_user(void) {
-    print("keyboard init");
+    print("gb61ble init");
+
+
 }
 
 void keyboard_post_init_user(void) {
     print("set pc14 to high");
     // enable dc pin  pc14
     palSetPad(GPIOC, 14);
+    //turn off led near usb
+    palClearPad(GPIOB, 5);
     // Customise these values to desired behaviour
     //debug_keyboard=true;
     //debug_mouse=true;
@@ -281,9 +285,9 @@ led_config_t g_led_config = {
         { 0,  0 }, //  0  Esc
     }
     , {
-            1, 1, 1, 1, 4, 1, 1, 1, 
-            1, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 1, 
-            4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 1, 
+            1, 1, 1, 1, 4, 1, 1, 1,
+            1, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 1,
+            4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 1,
             4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
             4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
     }
