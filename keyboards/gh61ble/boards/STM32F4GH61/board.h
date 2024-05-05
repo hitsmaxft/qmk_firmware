@@ -40,7 +40,7 @@
  * Board oscillators-related settings.
  * NOTE: LSE not fitted.
  */
-#define STM32_LSECLK                0U
+#define STM32_LSECLK                0U //disabled for w2812 power
 
 #define STM32_HSECLK                16000000U
 

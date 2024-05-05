@@ -38,6 +38,7 @@ void keyboard_post_init_user(void) {
     //debug_keyboard=true;
     //debug_mouse=true;
     rgb_matrix_set_color_all(0,0,0);
+    rgb_matrix_set_color_all(0,0,0);
 }
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {

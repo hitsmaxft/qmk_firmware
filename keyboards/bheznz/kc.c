@@ -88,8 +88,8 @@ char* keycode_to_ascii(uint16_t keycode) {
         case 0x0051: return "DWN";
         case 0x0052: return "UP";
         case 0x7820: return "rTG";
-        case 0x7821: return "rF";
-        case 0x7822: return "rR";
+        case 0x7821: return "rMdF";
+        case 0x7822: return "rMdR";
         case 0x7823: return "rHUI";
         case 0x7824: return "rHUD";
         case 0x7825: return "rSAI";

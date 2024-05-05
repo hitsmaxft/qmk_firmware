@@ -27,7 +27,7 @@
         },
         "ws2812": {
             "pin": "A7"
-                "driver": "bitbang"
+                "driver": "pwm"
         },
         "matrix": { "rows": 5, "cols": 13 },
         "matrix_pins": {
