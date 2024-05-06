@@ -17,8 +17,18 @@
     "diode_direction":  "COL2ROW",
 
     "matrix_pins": {
-        "rows": ["D10", "D8", "E14", "E12"],
-        "cols":  ["E10", "E8", "D1", "D15"]
+        "rows": [
+            "D15",
+            "D1",
+            "E8",
+            "E10"
+        ],
+        "cols":  [
+            "E12",
+            "E14",
+            "D8",
+            "D10"
+        ]
     },
 
     "ws2812":{
