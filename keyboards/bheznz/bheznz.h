@@ -13,3 +13,5 @@ char* keycode_to_ascii(uint16_t keycode);
 enum ZNZKeyCodes {
     KC_ZNZ_DEBUG = QK_KB_0
 };
+#undef STM32_HSECLK
+#define STM32_HSECLK                16000000U
