@@ -19,6 +19,9 @@
         "driver":"pwm"
     },
 
+    "eeprom":{
+        "driver":"i2c"
+    },
 
     "url": "",
 

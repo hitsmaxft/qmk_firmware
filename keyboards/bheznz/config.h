@@ -29,14 +29,16 @@
  * optimized for use in many industrial
  */
 
-/*
+
+//TODO use i2c eeprom ; multi slave
+
 #define STM32_ONBOARD_EEPROM_SIZE  256
-#    define EXTERNAL_EEPROM_I2C_BASE_ADDRESS 0b10100000
+//#    define EXTERNAL_EEPROM_I2C_BASE_ADDRESS 0b10100000
+#    define EXTERNAL_EEPROM_I2C_BASE_ADDRESS 0x50 << 1
 #    define EXTERNAL_EEPROM_BYTE_COUNT 256 //words
 #    define EXTERNAL_EEPROM_PAGE_SIZE 8
 #    define EXTERNAL_EEPROM_ADDRESS_SIZE 1
 #    define EXTERNAL_EEPROM_WRITE_TIME 5 //ms
-*/
 
 #define DEBUG_EEPROM_OUTPUT
 
