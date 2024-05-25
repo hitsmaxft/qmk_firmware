@@ -58,6 +58,10 @@ void mcu_reset(void) {
 }
 
  bool process_record_user(uint16_t keycode, keyrecord_t *record) {
+
+     if (record->event.pressed) {
+         add_keycode_to_history(keycode);
+     }
     switch (keycode) {
         case KC_ZNZ_DEBUG:
             if (record->event.pressed) {
@@ -123,7 +127,6 @@ bool oled_task_user(void) {
     sprintf(buffer, "RgbMode %d\n", rgb_matrix_config.mode);
     oled_write_P(PSTR(buffer), false);
     sprint_recent_keycodes(buffer, 24);
-    dprintf("oled history string '%s'\n" ,  buffer);
     oled_write_P(PSTR(buffer), false);
     //   oled_write_ln_P(PSTR("\n"), false);
     // Host Keyboard LED Status
