@@ -2,8 +2,50 @@
 #include "quantum.h"
 #include "bheznz.h"
 
+char* prefix_str(char* str, char* kc_str, char c) {
+    size_t kc_str_len = strlen(kc_str);
+    if (kc_str_len < sizeof(str) - 1) { // -1 to leave space for the 'L' character and the null terminator
+        str[0] = c; // Prepend 'L' to the start of str
+
+        // Copy kc_str to str, right after 'L'
+        strcpy(str + 1, kc_str); // +1 to start copying after 'L'
+    } else {
+        // kc_str is too long to fit into str, handle error appropriately
+        // For example, fill str with an error indicator string, such as "Err"
+        strcpy(str, "Err");
+    }
+
+    return str;
+}
+
 char* keycode_to_ascii(uint16_t keycode) {
+
     static char str[5];
+
+    if (keycode > QK_LAYER_TAP && keycode <= QK_LAYER_TAP_MAX) {
+        int lc= QK_LAYER_TAP_GET_LAYER(keycode);
+
+        char* kc_str = keycode_to_ascii((keycode)&0xFF);
+
+        if (lc == 0) {
+            prefix_str(str, kc_str, '0');
+        } else {
+            prefix_str(str, kc_str, (char)(lc - 1 + '1'));
+        }
+        return str;
+    }
+
+    if (keycode > QK_MOD_TAP && keycode <= QK_MOD_TAP_MAX) {
+        //QK_MOD_TAP_GET_MODS()
+        //int lc= QK_MOD_GE(keycode);
+        char* kc_str = keycode_to_ascii((keycode)&0xFF);
+        //copy kc_str into str and append L to start of str
+
+        prefix_str(str, kc_str, '^');
+
+        return str;
+    }
+
 
     switch (keycode) {
         case 0x0000: return "NO";
@@ -139,7 +181,7 @@ char* keycode_to_ascii(uint16_t keycode) {
         case 0x00E5: return "RSFT";
         case 0x00E6: return "RALT";
         case 0x00E7: return "RGUI";
-        default: str[0] = ' '; str[1] = ' '; return str; // Unknown keycode
+        default: return "??";
     }
 }
 
@@ -262,9 +304,9 @@ void sprint_recent_keycodes(char * buffer, uint8_t size) {
     char *buff_ptr = buffer;
     *buff_ptr = '\0';
 
-    for (int i = 0; i < KEYCODE_HISTORY_SIZE; i++) {
+    for (int i = KEYCODE_HISTORY_SIZE; i > 0 ; i--) {
         // 获取键码对应的字符
-        char *key_char = keycode_to_ascii(keycode_history[i]);
+        char *key_char = keycode_to_ascii(keycode_history[i-1]);
         // move pointer
         buff_ptr += snprintf(buff_ptr, 6, "%4s ", key_char);
     }
