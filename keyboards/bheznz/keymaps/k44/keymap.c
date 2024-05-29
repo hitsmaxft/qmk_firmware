@@ -16,10 +16,10 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
      * └───┴───┴───┴───┘
      */
     [0] = LAYOUT_ortho_4x4(
-        KC_X    ,    KC_UP  ,    KC_SPC,         KC_A,
-        KC_LEFT,    KC_ENTER,   KC_RIGHT,       KC_B,
-        KC_LEFT_CTRL,    KC_DOWN,    KC_LEFT_SHIFT,        KC_C,
-        LT(1, KC_Z),    KC_BACKSPACE,   LT(2, KC_C),    KC_D
+        KC_ESC    ,    KC_UP  ,    KC_SPC,         KC_PGUP,
+        KC_LEFT,    KC_ENTER,   KC_RIGHT,       KC_PGDN,
+        KC_LEFT_CTRL,    KC_DOWN,    KC_LEFT_SHIFT,   KC_TAB,
+        LT(1, KC_Z),    KC_BACKSPACE,   LT(2, KC_C),    KC_GRAVE
     ),
     [1] = LAYOUT_ortho_4x4(
         RGB_SPI,    RGB_VAI,    RGB_HUI,    _______,
