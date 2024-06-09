@@ -58,6 +58,8 @@ mkShell {
       pkgsCross.avr.buildPackages.gcc8
       avrlibc
       avrdude
+      openocd
+      inetutils
     ]
     ++ lib.optional arm [ gcc-arm-embedded ]
     ++ lib.optional teensy [ teensy-loader-cli ];

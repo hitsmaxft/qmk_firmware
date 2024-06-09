@@ -10,12 +10,16 @@
 #include "ws2812.h"
 #include "debug.h"
 #include "print.h"
-#include "rgb_matrix.h"
+
+#ifdef RGB_MATRIX_ENABLE
+    #include "rgb_matrix.h"
+#endif
 
 
 extern const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS];
 
 void _znz_eeconfig_debug_rgb_matrix(void) {
+#ifdef RGB_MATRIX_ENABLE
     dprintf("rgb_matrix_config EEPROM\n");
     dprintf("rgb_matrix_config.enable = %d\n", rgb_matrix_config.enable);
     dprintf("rgb_matrix_config.mode = %d\n", rgb_matrix_config.mode);
@@ -24,6 +28,7 @@ void _znz_eeconfig_debug_rgb_matrix(void) {
     dprintf("rgb_matrix_config.hsv.v = %d\n", rgb_matrix_config.hsv.v);
     dprintf("rgb_matrix_config.speed = %d\n", rgb_matrix_config.speed);
     dprintf("rgb_matrix_config.flags = %d\n", rgb_matrix_config.flags);
+#endif
 }
 
 // show debug
@@ -37,12 +42,14 @@ rgb_led_t leds[16] = {
 
 void keyboard_post_init_user(void) {
     // Customise these values to desired behaviour
-    debug_enable=false;
-    debug_matrix=false;
+    debug_enable=true;
+    debug_matrix=true;
     //debug_keyboard=true;
     //debug_mouse=true;
+#ifdef RGB_MATRIX_ENABLE
     rgb_matrix_set_color_all(0,0,0);
     rgb_matrix_set_color_all(0,0,0);
+#endif
 }
 
 

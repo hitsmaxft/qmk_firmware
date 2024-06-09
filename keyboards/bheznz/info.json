@@ -14,15 +14,6 @@
         "nkro": false
     },
 
-    "ws2812":{
-        "pin":"B0",
-        "driver":"pwm"
-    },
-
-    "eeprom":{
-        "driver":"i2c"
-    },
-
     "url": "",
 
     "usb": {

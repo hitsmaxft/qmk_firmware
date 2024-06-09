@@ -35,6 +35,11 @@
         "pin":"B0",
         "driver":"pwm"
     },
+
+    "eeprom":{
+        "driver":"i2c"
+    },
+
     "rgb_matrix": {
         "driver": "ws2812"
 

@@ -31,6 +31,9 @@
 
 
 //TODO use i2c eeprom ; multi slave
+//
+#ifndef NOZNZ
+//{{{
 
 #define STM32_ONBOARD_EEPROM_SIZE  256
 //#    define EXTERNAL_EEPROM_I2C_BASE_ADDRESS 0b10100000
@@ -72,3 +75,6 @@
 #define OLED_DC_PIN B7
 #define OLED_DISPLAY_128X64 TRUE
 
+//}}}
+
+#endif

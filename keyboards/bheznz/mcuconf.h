@@ -2,6 +2,8 @@
 
 #include_next "mcuconf.h"
 
+#ifndef NOZNZ
+
 #undef STM32_PWM_USE_TIM3
 #define STM32_PWM_USE_TIM3  TRUE
 
@@ -19,3 +21,5 @@
 
 #define I2C1_CLOCK_SPEED 400000 /* 400000 */
 #define I2C1_DUTY_CYCLE 2
+
+#endif

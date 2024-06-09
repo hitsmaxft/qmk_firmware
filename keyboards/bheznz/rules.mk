@@ -21,4 +21,3 @@ OLED_DRIVER = ssd1306
 SRC += usb_init.c kc.c
 
 OPT_DEFS += -DSTM32_DMA_REQUIRED=TRUE
-
