@@ -18,7 +18,7 @@
   },
   "bootloader": "rp2040",
   "processor": "RP2040",
-  "board": "GENERIC_RP_2040",
+  "board": "GENERIC_RP_RP2040",
   "layouts": {
     "LAYOUT": {
       "layout": [

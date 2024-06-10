@@ -19,9 +19,10 @@
 #include "uart.h"
 
 #define UART_MATRIX_RESPONSE_TIMEOUT 10000
+#define UART_BD_RATE 1000000
 
 void matrix_init_custom(void) {
-    uart_init(1000000);
+    uart_init(UART_BD_RATE);
 }
 
 bool matrix_scan_custom(matrix_row_t current_matrix[]) {

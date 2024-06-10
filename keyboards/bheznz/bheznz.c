@@ -42,6 +42,7 @@ rgb_led_t leds[16] = {
 
 void keyboard_post_init_user(void) {
     // Customise these values to desired behaviour
+    println("start with debug");
     debug_enable=true;
     debug_matrix=true;
     //debug_keyboard=true;

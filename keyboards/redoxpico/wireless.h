@@ -19,6 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "quantum.h"
 
+
+/**
 #define red_led_off   writePinHigh(F5)
 #define red_led_on    writePinLow(F5)
 #define blu_led_off   writePinHigh(F4)
@@ -33,3 +35,4 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define set_led_blue    red_led_off; grn_led_off; blu_led_on;  wht_led_off
 #define set_led_green   red_led_off; grn_led_on;  blu_led_off; wht_led_off
 #define set_led_white   red_led_off;  grn_led_off;  blu_led_off; wht_led_on
+*/
