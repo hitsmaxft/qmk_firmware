@@ -17,6 +17,7 @@
 #include "quantum.h"
 #include "matrix.h"
 #include "uart.h"
+#include "print.h"
 
 #define UART_MATRIX_RESPONSE_TIMEOUT 10000
 #define UART_BD_RATE 1000000
@@ -57,14 +58,26 @@ bool matrix_scan_custom(matrix_row_t current_matrix[]) {
     //check for the end packet, the key state bytes use the LSBs, so 0xE0
     //will only show up here if the correct bytes were recieved
     if (uart_data[10] == 0xE0) {
+        println("new uart data: ");
+        for (int i=0 ; i <5 ; i ++) {
+            printf("%#04x ", uart_data[i]);
+        }
+        println("");
+        for (int i=5 ; i <10 ; i ++) {
+            printf("%#04x ", uart_data[i]);
+        }
+        println("");
+        println("new data");
         //shifting and transferring the keystates to the QMK matrix variable
         for (uint8_t i = 0; i < MATRIX_ROWS; i++) {
             matrix_row_t current_row = (uint16_t) uart_data[i * 2] | (uint16_t) uart_data[i * 2 + 1] << 7;
             if (current_matrix[i] != current_row) {
                 changed = true;
             }
+            println("new key");
             current_matrix[i] = current_row;
         }
+    } else {
     }
 
     return changed;
