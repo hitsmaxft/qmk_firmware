@@ -20,6 +20,20 @@
           pico-dfu = pkgs.writeShellApplication {
               name = "pico-dfu";
               text = ''#!/bin/bash
+SKIP_CONFIRM=0
+
+while getopts ":y" opt; do
+    case $opt in
+        y )
+            SKIP_CONFIRM=1
+            ;;
+        \? )
+            echo "Invalid option: -$OPTARG" >&2
+            exit 1
+            ;;
+    esac
+done
+shift $((OPTIND -1))
 # Ensure the UF2 file is provided as a command-line argument
 if [ -z "$1" ]; then
     echo "Usage: $0 <path_to_uf2_file>"
@@ -34,6 +48,10 @@ if [ ! -f "$UF2_FILE" ]; then
     echo "The file $UF2_FILE does not exist."
     exit 1
 fi
+
+echo "Ensure sudo permission..."
+
+sudo bash -c 'echo "" >/dev/null'
 
 echo "Waiting for volume $VOLUME_PATH to appear..."
 
@@ -64,7 +82,12 @@ FINAL_COMMAND="sudo bash -c 'umount $VOLUME_PATH && cat $UF2_FILE > $DISK_ID'"
 # Show the final command to the user and ask for confirmation
 echo "The following command will be executed:"
 echo "$FINAL_COMMAND"
-read -r -p "Do you want to proceed? (y/n) " CONFIRM
+
+if [[ SKIP_CONFIRM -ne 1 ]] ; then
+    read -r -p "Do you want to proceed? (y/n) " CONFIRM
+else
+    CONFIRM="y"
+fi
 
 if [[ "$CONFIRM" =~ ^[Yy]$ ]]; then
     echo "Running the command: $FINAL_COMMAND"
