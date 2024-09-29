@@ -75,6 +75,8 @@ if [[ -z "$DISK_ID" ]]; then
 fi
 
 echo "The volume $VOLUME_PATH is associated with $DISK_ID."
+# delay 2s
+sleep 2
 
 # Define the final shell command
 FINAL_COMMAND="sudo bash -c 'umount $VOLUME_PATH && cat $UF2_FILE > $DISK_ID'"
