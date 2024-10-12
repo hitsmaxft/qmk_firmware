@@ -28,3 +28,7 @@
 [submodule "keyboards/lily58_2040"]
         path = keyboards/lily58_2040
         url = git@github.com:hitsmaxft/lily58-2040-fw.git
+[submodule "qmk_userspace"]
+	path = qmk_userspace
+	url = git@github.com:hitsmaxft/qmk_userspace.git
+	branch = develop
