@@ -110,6 +110,7 @@ fi
                 nativeBuildInputs = old.nativeBuildInputs ++ [
                     annepro2-tools.defaultPackage.${system}
                     pico-dfu
+                    pkgs.addlicense
                 ];
             });
         }
