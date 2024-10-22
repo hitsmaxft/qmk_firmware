@@ -19,7 +19,10 @@
         "driver": "ws2812",
         "animations": {
             "typing_heatmap": true,
-            "breathing": true
+            "breathing": true,
+            "cycle_all": true,
+            "raindrops": true,
+            "digital_rain": true
         },
         "default": {
             "on":true
