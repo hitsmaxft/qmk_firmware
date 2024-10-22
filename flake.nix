@@ -111,6 +111,7 @@ fi
                     annepro2-tools.defaultPackage.${system}
                     pico-dfu
                     pkgs.addlicense
+                    pkgs.license-cli
                 ];
             });
         }
