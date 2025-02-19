@@ -1,0 +1,24 @@
+{
+    "manufacturer": "hitsmaxft",
+    "keyboard_name": "bheznz",
+    "maintainer": "hitsmaxft",
+
+    "bootloader": "stm32duino",
+
+    "features": {
+        "bootmagic": false,
+        "command": true,
+        "console": true,
+        "extrakey": false,
+        "mousekey": false,
+        "nkro": false
+    },
+
+    "url": "",
+
+    "usb": {
+        "device_version": "1.0.0",
+        "pid": "0x0000",
+        "vid": "0xFEED"
+    }
+}

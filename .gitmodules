@@ -25,3 +25,7 @@
 	path = lib/lvgl
 	url = https://github.com/qmk/lvgl.git
 	branch = release/v8.2
+[submodule "qmk_userspace"]
+	path = qmk_userspace
+	url = git@github.com:hitsmaxft/qmk_userspace.git
+	branch = develop
