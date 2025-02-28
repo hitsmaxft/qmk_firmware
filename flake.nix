@@ -108,7 +108,7 @@ fi
         {
             devShells.default =  shell.overrideAttrs (old: {
                 nativeBuildInputs = old.nativeBuildInputs ++ [
-                  #annepro2-tools.defaultPackage.${system}
+                    annepro2-tools.defaultPackage.${system}
                     pico-dfu
                     pkgs.addlicense
                     pkgs.license-cli
