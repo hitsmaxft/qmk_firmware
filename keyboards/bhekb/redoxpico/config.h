@@ -1,5 +1,4 @@
-/*
- * Copyright (c) 2018 Yaotian Feng
+/* Copyright 2017 Mattia Dal Ben
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,33 +15,13 @@
  */
 
 #pragma once
-#include "quantum.h"
-#include <stdint.h>
-#include "ap2_led.h"
 
-typedef struct __attribute__((__packed__)) {
-    uint8_t _dummy[10];
-    bool    caps_lock;
-} ble_capslock_t;
-extern ble_capslock_t ble_capslock;
 
-enum AP2KeyCodes {
-    KC_AP2_BT1 = QK_KB_0,
-    KC_AP2_BT2,
-    KC_AP2_BT3,
-    KC_AP2_BT4,
-    KC_AP2_BT_UNPAIR,
-    KC_AP2_USB,
-    KC_AP_LED_ON,
-    KC_AP_LED_OFF,
-    KC_AP_LED_TOG,
-    KC_AP_LED_NEXT_PROFILE,
-    KC_AP_LED_PREV_PROFILE,
-    KC_AP_LED_NEXT_INTENSITY,
-    KC_AP_LED_SPEED,
-    KC_AP_RGB_VAI,
-    KC_AP_RGB_VAD,
-    KC_AP_RGB_TOG,
-    KC_AP_RGB_MOD,
-    KC_AP2_IAP,
-};
+/* key matrix size */
+#define MATRIX_ROWS 5
+#define MATRIX_COLS 14
+
+#define ONESHOT_TIMEOUT 500
+
+#define UART_TX_PIN GP4
+#define UART_RX_PIN GP5

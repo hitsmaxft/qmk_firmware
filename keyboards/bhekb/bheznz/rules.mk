@@ -1,0 +1,15 @@
+MCU = STM32F103
+
+BOARD = STM32_F103_STM32DUINO
+
+#BOARD = YEHUO_ZNZ_STM32DUINO
+
+# OPT_DEFS += -DBOOTLOADER_STM32DUINO
+# BOOTLOADER_TYPE = stm32duino
+# Options to pass to dfu-util when flashing
+# DFU_ARGS = -d 1EAF:0003 -a 1 -R
+# DFU_SUFFIX_ARGS = -v 1EAF -p 0003
+
+
+# EEPROM_DRIVER = vendor
+SRC += kc.c
