@@ -1,0 +1,59 @@
+#pragma once
+
+//#include "config_common.h"
+
+/**
+#define VENDOR_ID 0x45D4
+#define MANUFACTURER Dh 747
+#define DEVICE_VER 0x0001
+#define PRODUCT_ID 0x0111
+#define PRODUCT DK6064
+**/
+
+
+#define DEBOUNCE 5
+
+#define MATRIX_ROWS 5
+#define MATRIX_COLS 15
+
+#define MATRIX_ROW_PINS     { A1, A2, A3, A5, A4}
+#define MATRIX_COL_PINS     { B4, C4, C5 ,B1, A7,  C9, B2,B10, B12,B13,  B14,B15,C6,C7,C8}
+
+#undef LED_ON_HIGH
+#define LED_ON_HIGH 0
+#define LED_CAPS_LOCK_PIN B5
+#define LED_PIN_ON_STATE    0
+
+#define SOLENOID_PIN A8
+#define SOLENOID_ACTIVE true
+#define SOLENOID_DEFAULT_DWELL 20
+#undef STM32_HSECLK
+#define STM32_HSECLK 16000000
+
+#define TAPPING_TOGGLE 2
+#define DYNAMIC_KEYMAP_LAYER_COUNT 5
+#define DYNAMIC_KEYMAP_MACRO_COUNT 5
+
+
+
+
+
+#define DYNAMIC_KEYMAP_EEPROM_MAX_ADDR 2047
+
+/* EEPROM Driver Configuration */
+#define WEAR_LEVELING_LOGICAL_SIZE 2048
+#define WEAR_LEVELING_BACKING_SIZE (WEAR_LEVELING_LOGICAL_SIZE * 2)
+
+/**
+#define VIAL_KEYBOARD_UID {0x54, 0xF8, 0x27, 0x15, 0x2B, 0x66, 0x3A, 0xC0}
+**/
+
+#undef STM32_HSECLK
+#define STM32_HSECLK 16000000
+
+
+
+#undef DIODE_DIRECTION
+#define DIODE_DIRECTION COL2ROW
+
+
