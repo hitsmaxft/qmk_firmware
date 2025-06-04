@@ -28,3 +28,4 @@
 [submodule "keyboards/bhekb/lily58_2040"]
 	path = keyboards/bhekb/lily58_2040
 	url = git@github.com:hitsmaxft/lily58-2040-fw.git
+	branch = main
