@@ -5,6 +5,7 @@ from functools import lru_cache
 from math import ceil
 from pathlib import Path
 import os
+import sys
 from glob import glob
 
 import qmk.path
@@ -67,8 +68,8 @@ class AllKeyboards:
         return isinstance(other, AllKeyboards)
 
 
-base_path = os.path.join(os.getcwd(), "keyboards") + os.path.sep
-
+extra_path = os.getenv("EXTRA_KEYBOARD_FOLDER_PATH")
+base_path = os.path.join(os.getcwd(), "keyboards") + os.path.sep if not extra_path else os.path.join(extra_path, "keyboards") + os.path.sep
 
 @lru_cache(maxsize=1)
 def keyboard_alias_definitions():
@@ -197,7 +198,7 @@ def list_keyboards(resolve_defaults=True):
 
 @lru_cache(maxsize=None)
 def resolve_keyboard(keyboard):
-    cur_dir = Path('keyboards')
+    cur_dir = Path(base_path)
     rules = parse_rules_mk_file(cur_dir / keyboard / 'rules.mk')
     while 'DEFAULT_FOLDER' in rules and keyboard != rules['DEFAULT_FOLDER']:
         keyboard = rules['DEFAULT_FOLDER']
@@ -215,7 +216,7 @@ def config_h(keyboard):
         a dictionary representing the content of the entire config.h tree for a keyboard
     """
     config = {}
-    cur_dir = Path('keyboards')
+    cur_dir = Path(base_path)
     keyboard = Path(resolve_keyboard(keyboard))
 
     for dir in keyboard.parts:
@@ -234,7 +235,7 @@ def rules_mk(keyboard):
     Returns:
         a dictionary representing the content of the entire rules.mk tree for a keyboard
     """
-    cur_dir = Path('keyboards')
+    cur_dir = Path(base_path)
     keyboard = Path(resolve_keyboard(keyboard))
     rules = parse_rules_mk_file(cur_dir / keyboard / 'rules.mk')
 

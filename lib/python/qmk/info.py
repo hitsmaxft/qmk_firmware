@@ -20,6 +20,8 @@ from qmk.util import maybe_exit, truthy
 true_values = ['1', 'on', 'yes']
 false_values = ['0', 'off', 'no']
 
+extra_path = os.getenv("EXTRA_KEYBOARD_FOLDER_PATH")
+base_kb_path = os.path.join(os.getcwd(), "keyboards") + os.path.sep if not extra_path else os.path.join(extra_path, "keyboards") + os.path.sep
 
 def _keyboard_in_layout_name(keyboard, layout):
     """Validate that a layout macro does not contain name of keyboard
@@ -88,7 +90,7 @@ def _find_invalid_encoder_index(info_data):
 def _validate_build_target(keyboard, info_data):
     """Non schema checks
     """
-    keyboard_json_path = Path('keyboards') / keyboard / 'keyboard.json'
+    keyboard_json_path = Path(base_kb_path) / keyboard / 'keyboard.json'
     config_files = find_info_json(keyboard)
 
     # keyboard.json can only exist at the deepest part of the tree
@@ -223,7 +225,7 @@ def _validate(keyboard, info_data):
 def info_json(keyboard, force_layout=None):
     """Generate the info.json data for a specific keyboard.
     """
-    cur_dir = Path('keyboards')
+    cur_dir = Path(base_kb_path)
     root_rules_mk = parse_rules_mk_file(cur_dir / keyboard / 'rules.mk')
 
     if 'DEFAULT_FOLDER' in root_rules_mk:
@@ -765,7 +767,7 @@ def find_keyboard_c(keyboard):
     """Find all <keyboard>.c files
     """
     keyboard = Path(keyboard)
-    current_path = Path('keyboards/')
+    current_path = Path(base_kb_path)
 
     files = []
     for directory in keyboard.parts:
@@ -865,7 +867,7 @@ def _check_matrix(info_data):
 
 def _search_keyboard_h(keyboard):
     keyboard = Path(keyboard)
-    current_path = Path('keyboards/')
+    current_path = Path(base_kb_path)
     aliases = {}
     layouts = {}
 
@@ -1000,7 +1002,7 @@ def find_info_json(keyboard):
     """Finds all the info.json files associated with a keyboard.
     """
     # Find the most specific first
-    base_path = Path('keyboards')
+    base_path = Path(base_kb_path)
     keyboard_path = base_path / keyboard
     keyboard_parent = keyboard_path.parent
     info_jsons = [keyboard_path / 'info.json', keyboard_path / 'keyboard.json']
