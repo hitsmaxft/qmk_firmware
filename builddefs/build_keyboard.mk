@@ -73,12 +73,20 @@ KEYBOARD_FOLDER_2 := $(notdir $(KEYBOARD_FOLDER_PATH_2))
 KEYBOARD_FOLDER_3 := $(notdir $(KEYBOARD_FOLDER_PATH_3))
 KEYBOARD_FOLDER_4 := $(notdir $(KEYBOARD_FOLDER_PATH_4))
 KEYBOARD_FOLDER_5 := $(notdir $(KEYBOARD_FOLDER_PATH_5))
+
+
 KEYBOARD_PATHS :=
-KEYBOARD_PATH_1 := keyboards/$(KEYBOARD_FOLDER_PATH_1)
-KEYBOARD_PATH_2 := keyboards/$(KEYBOARD_FOLDER_PATH_2)
-KEYBOARD_PATH_3 := keyboards/$(KEYBOARD_FOLDER_PATH_3)
-KEYBOARD_PATH_4 := keyboards/$(KEYBOARD_FOLDER_PATH_4)
-KEYBOARD_PATH_5 := keyboards/$(KEYBOARD_FOLDER_PATH_5)
+
+# use extra keyboard path
+KEYBOARD_PATH_PREFIX := $(if $(EXTRA_KEYBOARD_FOLDER_PATH),$(EXTRA_KEYBOARD_FOLDER_PATH)/, "")
+KEYBOARD_PATH_1 := $(KEYBOARD_PATH_PREFIX)keyboards/$(KEYBOARD_FOLDER_PATH_1)
+KEYBOARD_PATH_2 := $(KEYBOARD_PATH_PREFIX)keyboards/$(KEYBOARD_FOLDER_PATH_2)
+KEYBOARD_PATH_3 := $(KEYBOARD_PATH_PREFIX)keyboards/$(KEYBOARD_FOLDER_PATH_3)
+KEYBOARD_PATH_4 := $(KEYBOARD_PATH_PREFIX)keyboards/$(KEYBOARD_FOLDER_PATH_4)
+
+KEYBOARD_PATH_5 := $(KEYBOARD_PATH_PREFIX)keyboards/$(KEYBOARD_FOLDER_PATH_5)
+
+## print all keyboard paths
 
 ifneq ("$(wildcard $(KEYBOARD_PATH_5)/)","")
     KEYBOARD_PATHS += $(KEYBOARD_PATH_5)
@@ -146,10 +154,12 @@ MAIN_KEYMAP_PATH_5 := $(KEYBOARD_PATH_5)/keymaps/$(KEYMAP)
 
 # Pull in rules from DD keyboard config
 INFO_RULES_MK = $(shell $(QMK_BIN) generate-rules-mk --quiet --escape --keyboard $(KEYBOARD) --output $(INTERMEDIATE_OUTPUT)/src/info_rules.mk)
+
 include $(INFO_RULES_MK)
 
 # Check for keymap.json first, so we can regenerate keymap.c
 include $(BUILDDEFS_PATH)/build_json.mk
+
 
 # Pull in keymap level rules.mk
 ifeq ("$(wildcard $(KEYMAP_PATH))", "")
@@ -228,6 +238,7 @@ ifneq ("$(wildcard $(KEYMAP_JSON))", "")
     endif
 
     # Load any rules.mk content from keymap.json
+
     INFO_RULES_MK = $(shell $(QMK_BIN) generate-rules-mk --quiet --escape --output $(INTERMEDIATE_OUTPUT)/src/rules.mk $(KEYMAP_JSON))
     include $(INFO_RULES_MK)
 
@@ -251,6 +262,7 @@ generated-files: $(INTERMEDIATE_OUTPUT)/src/config.h $(INTERMEDIATE_OUTPUT)/src/
 
 endif
 
+$(info $(QMK_BIN) generate-community-modules-rules-mk -kb $(KEYBOARD) --quiet --escape --output $(INTERMEDIATE_OUTPUT)/src/community_rules.mk $(KEYMAP_JSON))
 # Community modules
 COMMUNITY_RULES_MK = $(shell $(QMK_BIN) generate-community-modules-rules-mk -kb $(KEYBOARD) --quiet --escape --output $(INTERMEDIATE_OUTPUT)/src/community_rules.mk $(KEYMAP_JSON))
 include $(COMMUNITY_RULES_MK)
@@ -288,6 +300,9 @@ $(INTERMEDIATE_OUTPUT)/src/rgb_matrix_community_modules.inc: $(KEYMAP_JSON) $(DD
 SRC += $(INTERMEDIATE_OUTPUT)/src/community_modules.c
 
 generated-files: $(INTERMEDIATE_OUTPUT)/src/community_modules.h $(INTERMEDIATE_OUTPUT)/src/community_modules.c $(INTERMEDIATE_OUTPUT)/src/community_modules_introspection.c $(INTERMEDIATE_OUTPUT)/src/community_modules_introspection.h $(INTERMEDIATE_OUTPUT)/src/led_matrix_community_modules.inc $(INTERMEDIATE_OUTPUT)/src/rgb_matrix_community_modules.inc
+
+$(info "done 5")
+
 
 include $(BUILDDEFS_PATH)/converters.mk
 
