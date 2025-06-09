@@ -2,6 +2,7 @@
 """
 import logging
 import os
+import sys
 import argparse
 from pathlib import Path, PureWindowsPath, PurePosixPath
 
@@ -25,7 +26,19 @@ def is_keyboard(keyboard_name):
     rules_mk = keyboard_path / 'rules.mk'
     keyboard_json = keyboard_path / 'keyboard.json'
 
-    return rules_mk.exists() or keyboard_json.exists()
+
+    ext_path = os.getenv("EXTRA_KEYBOARD_FOLDER_PATH")
+
+    if ext_path is None:
+        # If EXTRA_KEYBOARD_FOLDER_PATH is not set, we only check the main keyboard path.
+        return rules_mk.exists() or keyboard_json.exists()
+
+    keyboard_path_extra = Path(ext_path) / 'keyboards' / keyboard_name
+
+    rules_mk_extra = keyboard_path_extra / 'rules.mk'
+    keyboard_json_extra = keyboard_path_extra / 'keyboard.json'
+
+    return rules_mk.exists() or keyboard_json.exists() or rules_mk_extra.exists() or keyboard_json_extra.exists()
 
 
 def under_qmk_firmware(path=Path(os.environ['ORIG_CWD'])):
