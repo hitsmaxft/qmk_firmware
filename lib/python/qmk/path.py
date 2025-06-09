@@ -9,6 +9,12 @@ from pathlib import Path, PureWindowsPath, PurePosixPath
 from qmk.constants import MAX_KEYBOARD_SUBFOLDERS, QMK_FIRMWARE, QMK_USERSPACE, HAS_QMK_USERSPACE
 from qmk.errors import NoSuchKeyboardError
 
+ext_path = os.getenv("EXTRA_KEYBOARD_FOLDER_PATH")
+if ext_path:
+    keyboards_path = Path(ext_path.rstrip('/')) / 'keyboards'
+else:
+    keyboards_path = Path('keyboards')
+
 
 def is_keyboard(keyboard_name):
     """Returns True if `keyboard_name` is a keyboard we can compile.
@@ -26,8 +32,6 @@ def is_keyboard(keyboard_name):
     rules_mk = keyboard_path / 'rules.mk'
     keyboard_json = keyboard_path / 'keyboard.json'
 
-
-    ext_path = os.getenv("EXTRA_KEYBOARD_FOLDER_PATH")
 
     if ext_path is None:
         # If EXTRA_KEYBOARD_FOLDER_PATH is not set, we only check the main keyboard path.
