@@ -283,7 +283,9 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
                 }
                 return true;
             #endif
-
+            case KC_AP2_IAP:
+                bootloader_jump();
+                return true;
             default:
                 break;
         }

@@ -3,7 +3,7 @@
 Compile an info.json for a particular keyboard and pretty-print it.
 """
 import sys
-import json
+import hjson as json
 
 from milc import cli
 

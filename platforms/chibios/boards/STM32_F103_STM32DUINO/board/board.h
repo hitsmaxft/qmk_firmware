@@ -143,7 +143,7 @@
 /*
 #define usb_lld_connect_bus(usbp) palClearPad(GPIOB, GPIOB_USB_DISC)
 */
-#define usb_lld_connect_bus(usbp) palSetPadMode(GPIOA, 12, PAL_MODE_INPUT);
+#define usb_lld_connect_bus(usbp)  palClearPad(GPIOD, 6); palSetPadMode(GPIOA, 12, PAL_MODE_INPUT);
 
 /*
  * USB bus de-activation macro, required by the USB driver.
