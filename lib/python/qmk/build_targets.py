@@ -149,6 +149,8 @@ class BuildTarget:
         raise NotImplementedError("compile_command() not implemented in base class")
 
     def generate_compilation_database(self, build_target: str = None, skip_clean: bool = False, **env_vars) -> None:
+        print('reset build target to None for compilation database generation')
+        build_target = None
         self.prepare_build(build_target=build_target, **env_vars)
         command = self.compile_command(build_target=build_target, dry_run=True, **env_vars)
         output_path = QMK_FIRMWARE / 'compile_commands.json'

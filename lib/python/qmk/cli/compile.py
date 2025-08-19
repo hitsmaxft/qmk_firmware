@@ -22,6 +22,7 @@ from qmk.build_targets import KeyboardKeymapBuildTarget, JsonKeymapBuildTarget
 @cli.argument('-e', '--env', arg_only=True, action='append', default=[], help="Set a variable to be passed to make. May be passed multiple times.")
 @cli.argument('-c', '--clean', arg_only=True, action='store_true', help="Remove object files before compiling.")
 @cli.argument('-t', '--target', type=str, default=None, help="Intended alternative build target, such as `production` in `make planck/rev4:default:production`.")
+@cli.argument('-bl', '--bootloader', type=str, default=None, help='The flash command, corresponding to qmk\'s make options of bootloaders.')
 @cli.argument('--compiledb', arg_only=True, action='store_true', help="Generates the clang compile_commands.json file during build. Implies --clean.")
 @cli.subcommand('Compile a QMK Firmware.')
 @automagic_keyboard
@@ -80,4 +81,8 @@ def compile(cli):
         return False
 
     target.configure(parallel=cli.config.compile.parallel, clean=cli.args.clean, compiledb=cli.args.compiledb)
-    return target.compile(cli.args.target, dry_run=cli.args.dry_run, **envs)
+    if not cli.args.bootloader:
+        # If a target is specified, use that instead of the default
+        return target.compile(cli.args.target, dry_run=cli.args.dry_run, **envs)
+    else:
+        return target.compile(build_target=cli.args.bootloader, dry_run=cli.args.dry_run, **envs)
