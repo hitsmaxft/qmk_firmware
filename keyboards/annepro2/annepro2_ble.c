@@ -27,6 +27,14 @@
 #define AP2_BLE_RX_MAX_PAYLOAD 32
 #define AP2_BLE_RX_MAX_FRAME_SIZE (AP2_BLE_RX_HEADER_SIZE + AP2_BLE_RX_MAX_PAYLOAD)
 
+#ifndef ANNEPRO2_BLE_COMMAND_TIMEOUT
+#    define ANNEPRO2_BLE_COMMAND_TIMEOUT 500
+#endif
+
+#ifndef ANNEPRO2_BLE_COMMAND_RETRIES
+#    define ANNEPRO2_BLE_COMMAND_RETRIES 2
+#endif
+
 #if defined(CONSOLE_ENABLE) && defined(ANNEPRO2_BLE_DEBUG)
 #    define AP2_BLE_LOG(fmt, ...) uprintf("AP2 BLE %08lX " fmt "\n", (unsigned long)timer_read32(), ##__VA_ARGS__)
 #else
@@ -41,10 +49,22 @@ static void    ap2_ble_keyboard(report_keyboard_t *report);
 
 static void ap2_ble_switch_ble_driver(void);
 static void ap2_ble_handle_rx_frame(const uint8_t *frame, uint8_t size);
+static void ap2_ble_handle_command_ack(uint8_t command, uint8_t value);
 static void ap2_ble_reset_rx_parser(uint8_t byte);
+static void ap2_ble_send_broadcast(void);
+static void ap2_ble_send_connect(void);
+static void ap2_ble_start_connect(void);
 #if defined(CONSOLE_ENABLE) && defined(ANNEPRO2_BLE_DEBUG)
 static void ap2_ble_log_rx_frame(const uint8_t *frame, uint8_t size);
 #endif
+
+typedef enum {
+    AP2_BLE_STATE_USB,
+    AP2_BLE_STATE_WAIT_BROADCAST_ACK,
+    AP2_BLE_STATE_WAIT_CONNECT_ACK,
+    AP2_BLE_STATE_WAIT_HANDSHAKE,
+    AP2_BLE_STATE_ACTIVE,
+} ap2_ble_state_t;
 
 /* -------------------- Static Local Variables ------------------------------ */
 static host_driver_t ap2_ble_driver = {ap2_ble_leds, ap2_ble_keyboard, NULL, ap2_ble_mouse, ap2_ble_extra};
@@ -78,18 +98,33 @@ static uint8_t ble_mcu_hid_handshake_response[12] = {
 
 static uint8_t ble_mcu_bootload[11] = {0x7b, 0x10, 0x51, 0x10, 0x03, 0x00, 0x00, 0x7d, 0x02, 0x01, 0x01};
 
-static host_driver_t *last_host_driver = NULL;
-static int8_t         last_broadcast   = -1;
-static bool           ble_route_requested;
-static uint8_t        ble_rx_frame[AP2_BLE_RX_MAX_FRAME_SIZE];
-static uint8_t        ble_rx_frame_size;
-static uint8_t        ble_rx_expected_size;
+static host_driver_t  *last_host_driver = NULL;
+static ap2_ble_state_t ble_state        = AP2_BLE_STATE_USB;
+static int8_t          last_slot        = -1;
+static uint8_t         selected_slot;
+static bool            connect_after_broadcast;
+static uint8_t         command_retries;
+static uint32_t        command_timer;
+static uint8_t         ble_rx_frame[AP2_BLE_RX_MAX_FRAME_SIZE];
+static uint8_t         ble_rx_frame_size;
+static uint8_t         ble_rx_expected_size;
 #if defined(CONSOLE_ENABLE) && defined(ANNEPRO2_BLE_DEBUG)
 static uint8_t ble_debug_keyboard_reports;
 #endif
 #ifdef NKRO_ENABLE
 static bool lastNkroStatus = false;
 #endif // NKRO_ENABLE
+
+static void ap2_ble_set_state(ap2_ble_state_t state) {
+    if (ble_state != state) {
+        AP2_BLE_LOG("state %u -> %u", (unsigned)ble_state, (unsigned)state);
+        ble_state = state;
+    }
+}
+
+static bool ap2_ble_route_requested(void) {
+    return ble_state != AP2_BLE_STATE_USB;
+}
 
 static void ap2_ble_begin_route_request(void) {
     /* Do not leave reports routed to an old BLE link while selecting a slot. */
@@ -101,7 +136,6 @@ static void ap2_ble_begin_route_request(void) {
         host_set_driver(last_host_driver);
         AP2_BLE_LOG("route pending");
     }
-    ble_route_requested = true;
 }
 
 /* -------------------- Public Function Implementation ---------------------- */
@@ -119,17 +153,15 @@ void annepro2_ble_broadcast(uint8_t port) {
     if (port > 3) {
         port = 3;
     }
-    const bool reconnect = last_broadcast == (int8_t)port;
+    const bool reconnect = last_slot == (int8_t)port;
 
-    AP2_BLE_LOG("tx broadcast slot=%u reconnect=%u previous_slot=%d", port, reconnect, last_broadcast);
     ap2_ble_begin_route_request();
-    sdWrite(&SD1, ble_mcu_start_broadcast, sizeof(ble_mcu_start_broadcast));
-    sdPut(&SD1, port);
-    sdPut(&SD1, 0x00);
-    if (reconnect) {
-        annepro2_ble_connect(port);
-    }
-    last_broadcast = port;
+    selected_slot           = port;
+    connect_after_broadcast = reconnect;
+    last_slot               = port;
+    command_retries         = 0;
+    ap2_ble_set_state(AP2_BLE_STATE_WAIT_BROADCAST_ACK);
+    ap2_ble_send_broadcast();
 }
 
 void annepro2_ble_connect(uint8_t port) {
@@ -137,14 +169,16 @@ void annepro2_ble_connect(uint8_t port) {
         port = 3;
     }
     ap2_ble_begin_route_request();
-    AP2_BLE_LOG("tx connect slot=%u", port);
-    sdWrite(&SD1, ble_mcu_connect, sizeof(ble_mcu_connect));
-    sdPut(&SD1, port);
-    sdPut(&SD1, 0x00);
+    selected_slot           = port;
+    last_slot               = port;
+    connect_after_broadcast = false;
+    ap2_ble_start_connect();
 }
 
 void annepro2_ble_disconnect(void) {
-    ble_route_requested = false;
+    ap2_ble_set_state(AP2_BLE_STATE_USB);
+    connect_after_broadcast = false;
+    command_retries         = 0;
     AP2_BLE_LOG("route usb ble_driver=%u", host_get_driver() == &ap2_ble_driver);
 
     /* This only changes QMK's output route; it does not disconnect the module. */
@@ -163,8 +197,31 @@ void annepro2_ble_disconnect(void) {
 void annepro2_ble_unpair(void) {
     AP2_BLE_LOG("tx unpair");
     sdWrite(&SD1, ble_mcu_unpair, sizeof(ble_mcu_unpair));
-    last_broadcast = -1;
+    last_slot = -1;
     annepro2_ble_disconnect();
+}
+
+void annepro2_ble_task(void) {
+    if (ble_state != AP2_BLE_STATE_WAIT_BROADCAST_ACK && ble_state != AP2_BLE_STATE_WAIT_CONNECT_ACK) {
+        return;
+    }
+    if (timer_elapsed32(command_timer) < ANNEPRO2_BLE_COMMAND_TIMEOUT) {
+        return;
+    }
+
+    if (command_retries >= ANNEPRO2_BLE_COMMAND_RETRIES) {
+        AP2_BLE_LOG("command timeout state=%u slot=%u retries=%u", (unsigned)ble_state, selected_slot, command_retries);
+        /* A late handshake is still valid, so keep the BLE route request alive. */
+        ap2_ble_set_state(AP2_BLE_STATE_WAIT_HANDSHAKE);
+        return;
+    }
+
+    command_retries++;
+    if (ble_state == AP2_BLE_STATE_WAIT_BROADCAST_ACK) {
+        ap2_ble_send_broadcast();
+    } else {
+        ap2_ble_send_connect();
+    }
 }
 
 void annepro2_ble_rx_byte(uint8_t byte) {
@@ -201,7 +258,61 @@ void annepro2_ble_rx_byte(uint8_t byte) {
 }
 
 /* ------------------- Static Function Implementation ----------------------- */
+static void ap2_ble_send_broadcast(void) {
+    AP2_BLE_LOG("tx broadcast slot=%u attempt=%u reconnect=%u", selected_slot, command_retries + 1, connect_after_broadcast);
+    sdWrite(&SD1, ble_mcu_start_broadcast, sizeof(ble_mcu_start_broadcast));
+    sdPut(&SD1, selected_slot);
+    sdPut(&SD1, 0x00);
+    command_timer = timer_read32();
+}
+
+static void ap2_ble_send_connect(void) {
+    AP2_BLE_LOG("tx connect slot=%u attempt=%u", selected_slot, command_retries + 1);
+    sdWrite(&SD1, ble_mcu_connect, sizeof(ble_mcu_connect));
+    sdPut(&SD1, selected_slot);
+    sdPut(&SD1, 0x00);
+    command_timer = timer_read32();
+}
+
+static void ap2_ble_start_connect(void) {
+    command_retries = 0;
+    ap2_ble_set_state(AP2_BLE_STATE_WAIT_CONNECT_ACK);
+    ap2_ble_send_connect();
+}
+
+static void ap2_ble_handle_command_ack(uint8_t command, uint8_t value) {
+    AP2_BLE_LOG("rx command ack=%02X value=%02X state=%u", command, value, (unsigned)ble_state);
+
+    if (command == 0x01) {
+        const bool late_reconnect_ack = ble_state == AP2_BLE_STATE_WAIT_HANDSHAKE && connect_after_broadcast;
+        if (ble_state != AP2_BLE_STATE_WAIT_BROADCAST_ACK && !late_reconnect_ack) {
+            AP2_BLE_LOG("ignore stale broadcast ack");
+            return;
+        }
+        command_retries = 0;
+        if (connect_after_broadcast) {
+            connect_after_broadcast = false;
+            ap2_ble_start_connect();
+        } else {
+            ap2_ble_set_state(AP2_BLE_STATE_WAIT_HANDSHAKE);
+        }
+        return;
+    }
+
+    if (command == 0x04) {
+        if (ble_state != AP2_BLE_STATE_WAIT_CONNECT_ACK) {
+            AP2_BLE_LOG("ignore stale connect ack");
+            return;
+        }
+        command_retries = 0;
+        ap2_ble_set_state(AP2_BLE_STATE_WAIT_HANDSHAKE);
+    }
+}
+
 static void ap2_ble_switch_ble_driver(void) {
+    connect_after_broadcast = false;
+    command_retries         = 0;
+    ap2_ble_set_state(AP2_BLE_STATE_ACTIVE);
     if (host_get_driver() == &ap2_ble_driver) {
         return;
     }
@@ -231,7 +342,11 @@ static void ap2_ble_handle_rx_frame(const uint8_t *frame, uint8_t size) {
     }
 
     if (size >= 11 && frame[1] == 0x12 && frame[2] == 0x35) {
-        AP2_BLE_LOG("rx decoded group=%02X command=%02X value=%02X requested=%u", frame[8], frame[9], frame[10], ble_route_requested);
+        AP2_BLE_LOG("rx decoded group=%02X command=%02X value=%02X state=%u", frame[8], frame[9], frame[10], (unsigned)ble_state);
+
+        if (frame[4] == 0x03 && frame[5] == 0x00 && frame[8] == 0x40 && (frame[9] == 0x01 || frame[9] == 0x04)) {
+            ap2_ble_handle_command_ack(frame[9], frame[10]);
+        }
 
         /*
          * The official keyboard firmware answers an incoming 0x20/0x0c with
@@ -241,9 +356,10 @@ static void ap2_ble_handle_rx_frame(const uint8_t *frame, uint8_t size) {
          * change QMK's host driver.
          */
         if (frame[4] == 0x03 && frame[5] == 0x00 && frame[8] == 0x20 && frame[9] == 0x0c) {
+            const bool route_requested = ap2_ble_route_requested();
             AP2_BLE_LOG("tx hid handshake response");
             sdWrite(&SD1, ble_mcu_hid_handshake_response, sizeof(ble_mcu_hid_handshake_response));
-            if (ble_route_requested) {
+            if (route_requested) {
                 AP2_BLE_LOG("rx hid handshake ready");
                 ap2_ble_switch_ble_driver();
             }

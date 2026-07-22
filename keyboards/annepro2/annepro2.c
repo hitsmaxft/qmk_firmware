@@ -124,6 +124,7 @@ void keyboard_post_init_kb(void) {
 void matrix_scan_kb(void) {
     // BLE status is asynchronous; drain it without blocking matrix scanning.
     annepro2_ble_drain_rx();
+    annepro2_ble_task();
 
     /* While there's data from LED keyboard sent - read it. */
     while (!sdGetWouldBlock(&SD0)) {
