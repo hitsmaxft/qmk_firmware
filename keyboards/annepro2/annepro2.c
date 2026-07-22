@@ -17,6 +17,7 @@
 #include "hal.h"
 #include "annepro2.h"
 #include "annepro2_ble.h"
+#include "print.h"
 #include "spi_master.h"
 #include "ap2_led.h"
 #include "protocol.h"
@@ -45,6 +46,15 @@ static uint8_t led_mcu_wakeup[11] = {0x7b, 0x10, 0x43, 0x10, 0x03, 0x00, 0x00, 0
 ble_capslock_t ble_capslock = {._dummy = {0}, .caps_lock = false};
 static uint8_t ble_rx_buffer[sizeof(ble_capslock)];
 static uint8_t ble_rx_offset;
+
+#if defined(CONSOLE_ENABLE) && defined(ANNEPRO2_BLE_DEBUG)
+#    define AP2_BLE_RX_LOG(buffer)                                                                                                            \
+        uprintf("AP2 BLE %08lX rx11 %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X caps=%u\n", (unsigned long)timer_read32(), \
+                (buffer)[0], (buffer)[1], (buffer)[2], (buffer)[3], (buffer)[4], (buffer)[5], (buffer)[6], (buffer)[7], (buffer)[8],       \
+                (buffer)[9], (buffer)[10], ble_capslock.caps_lock)
+#else
+#    define AP2_BLE_RX_LOG(buffer)
+#endif
 
 #ifdef RGB_MATRIX_ENABLE
 static uint8_t led_enabled = 1;
@@ -130,6 +140,7 @@ void matrix_scan_kb(void) {
             for (uint8_t i = 0; i < sizeof(ble_capslock); i++) {
                 ((uint8_t *)&ble_capslock)[i] = ble_rx_buffer[i];
             }
+            AP2_BLE_RX_LOG(ble_rx_buffer);
         }
     }
 

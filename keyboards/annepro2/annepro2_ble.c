@@ -19,6 +19,7 @@
 #include "hal.h"
 #include "host.h"
 #include "host_driver.h"
+#include "print.h"
 #include "report.h"
 #include "timer.h"
 
@@ -32,6 +33,12 @@ static void ap2_ble_swtich_ble_driver(void);
 
 #ifndef ANNEPRO2_BLE_CONNECT_GUARD_MS
 #    define ANNEPRO2_BLE_CONNECT_GUARD_MS 200
+#endif
+
+#if defined(CONSOLE_ENABLE) && defined(ANNEPRO2_BLE_DEBUG)
+#    define AP2_BLE_LOG(fmt, ...) uprintf("AP2 BLE %08lX " fmt "\n", (unsigned long)timer_read32(), ##__VA_ARGS__)
+#else
+#    define AP2_BLE_LOG(fmt, ...)
 #endif
 
 /* -------------------- Static Local Variables ------------------------------ */
@@ -67,15 +74,24 @@ static host_driver_t *last_host_driver = NULL;
 static int8_t         last_broadcast = -1;
 static bool           ble_connect_pending;
 static uint32_t       ble_connect_started_at;
+#if defined(CONSOLE_ENABLE) && defined(ANNEPRO2_BLE_DEBUG)
+static uint8_t ble_debug_keyboard_reports;
+#endif
 #ifdef NKRO_ENABLE
 static bool lastNkroStatus = false;
 #endif  // NKRO_ENABLE
 
 /* -------------------- Public Function Implementation ---------------------- */
 
-void annepro2_ble_bootload(void) { sdWrite(&SD1, ble_mcu_bootload, sizeof(ble_mcu_bootload)); }
+void annepro2_ble_bootload(void) {
+    AP2_BLE_LOG("bootload command");
+    sdWrite(&SD1, ble_mcu_bootload, sizeof(ble_mcu_bootload));
+}
 
-void annepro2_ble_startup(void) { sdWrite(&SD1, ble_mcu_wakeup, sizeof(ble_mcu_wakeup)); }
+void annepro2_ble_startup(void) {
+    AP2_BLE_LOG("startup wakeup command");
+    sdWrite(&SD1, ble_mcu_wakeup, sizeof(ble_mcu_wakeup));
+}
 
 void annepro2_ble_broadcast(uint8_t port) {
     if (port > 3) {
@@ -83,6 +99,8 @@ void annepro2_ble_broadcast(uint8_t port) {
     }
     const bool reconnect = last_broadcast == (int8_t)port;
     uint8_t    frame[sizeof(ble_mcu_start_broadcast) + 2];
+
+    AP2_BLE_LOG("broadcast slot=%u reconnect=%u previous_slot=%d", port, reconnect, last_broadcast);
 
     if (!reconnect) {
         /* Do not keep sending HID reports to a previously selected slot. */
@@ -116,6 +134,7 @@ void annepro2_ble_connect(uint8_t port) {
     }
     frame[sizeof(ble_mcu_connect)]     = port;
     frame[sizeof(ble_mcu_connect) + 1] = 0x00;
+    AP2_BLE_LOG("connect slot=%u guard_ms=%u", port, ANNEPRO2_BLE_CONNECT_GUARD_MS);
     sdWrite(&SD1, frame, sizeof(frame));
 
     /*
@@ -128,11 +147,19 @@ void annepro2_ble_connect(uint8_t port) {
 }
 
 void annepro2_ble_disconnect(void) {
+    const bool had_ble_driver = host_get_driver() == &ap2_ble_driver;
+#if defined(CONSOLE_ENABLE) && defined(ANNEPRO2_BLE_DEBUG)
+    const int8_t previous_slot = last_broadcast;
+    const bool   was_pending   = ble_connect_pending;
+#endif
+
     ble_connect_pending = false;
     last_broadcast      = -1;
 
+    AP2_BLE_LOG("disconnect slot=%d pending=%u ble_driver=%u", previous_slot, was_pending, had_ble_driver);
+
     /* Skip if the driver is already enabled */
-    if (host_get_driver() != &ap2_ble_driver) {
+    if (!had_ble_driver) {
         return;
     }
 
@@ -144,22 +171,30 @@ void annepro2_ble_disconnect(void) {
 }
 
 void annepro2_ble_unpair(void) {
+    AP2_BLE_LOG("unpair command");
     sdWrite(&SD1, ble_mcu_unpair, sizeof(ble_mcu_unpair));
     annepro2_ble_disconnect();
 }
 
 void annepro2_ble_task(void) {
-    if (!ble_connect_pending || timer_elapsed32(ble_connect_started_at) < ANNEPRO2_BLE_CONNECT_GUARD_MS) {
+    if (!ble_connect_pending) {
+        return;
+    }
+
+    const uint32_t elapsed = timer_elapsed32(ble_connect_started_at);
+    if (elapsed < ANNEPRO2_BLE_CONNECT_GUARD_MS) {
         return;
     }
 
     ble_connect_pending = false;
+    AP2_BLE_LOG("connect guard complete elapsed_ms=%lu", (unsigned long)elapsed);
     ap2_ble_swtich_ble_driver();
 }
 
 /* ------------------- Static Function Implementation ----------------------- */
 static void ap2_ble_swtich_ble_driver(void) {
     if (host_get_driver() == &ap2_ble_driver) {
+        AP2_BLE_LOG("driver already BLE");
         return;
     }
     clear_keyboard();
@@ -169,6 +204,10 @@ static void ap2_ble_swtich_ble_driver(void) {
 #endif
     keymap_config.nkro = false;
     host_set_driver(&ap2_ble_driver);
+#if defined(CONSOLE_ENABLE) && defined(ANNEPRO2_BLE_DEBUG)
+    ble_debug_keyboard_reports = 0;
+#endif
+    AP2_BLE_LOG("driver switched to BLE");
 }
 
 static uint8_t ap2_ble_leds(void) {
@@ -205,6 +244,7 @@ static void ap2_ble_extra(report_extra_t *report) {
             frame[i + 1] = ble_mcu_send_consumer_report[i];
         }
         frame[sizeof(ble_mcu_send_consumer_report) + 1] = CONSUMER2AP2(report->usage);
+        AP2_BLE_LOG("consumer usage=%04X code=%02X", report->usage, frame[sizeof(ble_mcu_send_consumer_report) + 1]);
         sdWrite(&SD1, frame, sizeof(frame));
     }
 }
@@ -222,5 +262,11 @@ static void ap2_ble_keyboard(report_keyboard_t *report) {
     for (uint8_t i = 0; i < KEYBOARD_REPORT_SIZE; i++) {
         frame[sizeof(ble_mcu_send_report) + 1 + i] = ((const uint8_t *)report)[i];
     }
+#if defined(CONSOLE_ENABLE) && defined(ANNEPRO2_BLE_DEBUG)
+    if (ble_debug_keyboard_reports < 3) {
+        ble_debug_keyboard_reports++;
+        AP2_BLE_LOG("keyboard report #%u after driver switch", ble_debug_keyboard_reports);
+    }
+#endif
     sdWrite(&SD1, frame, sizeof(frame));
 }
