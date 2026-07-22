@@ -30,7 +30,7 @@ static const SerialConfig led_uart_init_config = {
 
 #ifndef LED_UART_BAUD_RATE
 #    define LED_UART_BAUD_RATE 115200
-#endif  // LED_UART_BAUD_RATE
+#endif // LED_UART_BAUD_RATE
 
 static const SerialConfig led_uart_runtine_config = {
     .speed = LED_UART_BAUD_RATE,
@@ -43,6 +43,12 @@ static const SerialConfig ble_uart_config = {
 static uint8_t led_mcu_wakeup[11] = {0x7b, 0x10, 0x43, 0x10, 0x03, 0x00, 0x00, 0x7d, 0x02, 0x01, 0x02};
 
 ble_capslock_t ble_capslock = {._dummy = {0}, .caps_lock = false};
+
+static void annepro2_ble_drain_rx(void) {
+    while (!sdGetWouldBlock(&SD1)) {
+        annepro2_ble_rx_byte((uint8_t)sdGet(&SD1));
+    }
+}
 
 #ifdef RGB_MATRIX_ENABLE
 static uint8_t led_enabled = 1;
@@ -88,7 +94,8 @@ void keyboard_pre_init_kb(void) {
     proto_init(&proto, led_command_callback);
 
     // loop to clear out receive buffer from shine wakeup
-    while (!sdGetWouldBlock(&SD0)) sdGet(&SD0);
+    while (!sdGetWouldBlock(&SD0))
+        sdGet(&SD0);
 
     sdStart(&SD0, &led_uart_runtine_config);
     keyboard_pre_init_user();
@@ -103,30 +110,26 @@ void keyboard_post_init_kb(void) {
     // send out the queue before we read back
     wait_ms(100);
 
-    // loop to clear out receive buffer from ble wakeup
-    while (!sdGetWouldBlock(&SD1)) sdGet(&SD1);
+    // Parse the wakeup response instead of discarding possible status events.
+    annepro2_ble_drain_rx();
 
-    #ifdef RGB_MATRIX_ENABLE
+#ifdef RGB_MATRIX_ENABLE
     ap2_led_set_manual_control(1);
     ap2_led_enable();
-    #endif
+#endif
 
     keyboard_post_init_user();
 }
 
 void matrix_scan_kb(void) {
-    // if there's stuff on the ble serial buffer
-    // read it into the capslock struct
-    while (!sdGetWouldBlock(&SD1)) {
-        sdReadTimeout(&SD1, (uint8_t *)&ble_capslock, sizeof(ble_capslock_t), 10);
-    }
+    // BLE status is asynchronous; drain it without blocking matrix scanning.
+    annepro2_ble_drain_rx();
 
     /* While there's data from LED keyboard sent - read it. */
     while (!sdGetWouldBlock(&SD0)) {
         uint8_t byte = sdGet(&SD0);
         proto_consume(&proto, byte);
     }
-
 
     matrix_scan_user();
 }
@@ -215,10 +218,12 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
                 ap2_led_next_animation_speed();
                 ap2_led_reset_foreground_color();
                 return false;
-            #ifdef RGB_MATRIX_ENABLE
+#ifdef RGB_MATRIX_ENABLE
             case QK_RGB_MATRIX_TOGGLE:
-                if(rgb_matrix_is_enabled()) ap2_led_disable();
-                else ap2_led_enable();
+                if (rgb_matrix_is_enabled())
+                    ap2_led_disable();
+                else
+                    ap2_led_enable();
                 return true;
 
             case KC_AP_RGB_VAI:
@@ -282,7 +287,7 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
                     }
                 }
                 return true;
-            #endif
+#endif
 
             default:
                 break;
