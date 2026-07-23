@@ -22,6 +22,8 @@ void annepro2_ble_bootload(void);
 void annepro2_ble_startup(void);
 void annepro2_ble_broadcast(uint8_t port);
 void annepro2_ble_connect(uint8_t port);
+void annepro2_ble_slot_press(uint8_t port);
+void annepro2_ble_slot_release(uint8_t port);
 void annepro2_ble_disconnect(void);
 void annepro2_ble_unpair(void);
 void annepro2_ble_task(void);
