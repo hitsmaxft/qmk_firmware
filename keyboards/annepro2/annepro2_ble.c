@@ -445,10 +445,17 @@ static void ap2_ble_send_slot_state(void) {
         return;
     }
 
-    AP2_BLE_LOG("tx slot state=%d", command_slot_state);
+    /*
+     * The stock firmware emits 0x20/0x0b once at the edge of a slot action.
+     * It is not part of the retried 0x40/0x01 or 0x40/0x04 transaction.
+     */
+    const int8_t slot_state = command_slot_state;
+    command_slot_state      = -1;
+
+    AP2_BLE_LOG("tx slot state=%d", slot_state);
     sdWrite(&SD1, ble_mcu_slot_state, sizeof(ble_mcu_slot_state));
     sdPut(&SD1, selected_slot);
-    sdPut(&SD1, (uint8_t)command_slot_state);
+    sdPut(&SD1, (uint8_t)slot_state);
 }
 
 static void ap2_ble_start_connect(void) {
