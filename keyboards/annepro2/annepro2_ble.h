@@ -20,6 +20,7 @@
 
 void annepro2_ble_bootload(void);
 void annepro2_ble_startup(void);
+void annepro2_ble_autoconnect(void);
 void annepro2_ble_broadcast(uint8_t port);
 void annepro2_ble_connect(uint8_t port);
 void annepro2_ble_disconnect(void);

@@ -112,6 +112,7 @@ void keyboard_post_init_kb(void) {
 
     // Parse the wakeup response instead of discarding possible status events.
     annepro2_ble_drain_rx();
+    annepro2_ble_autoconnect();
 
 #ifdef RGB_MATRIX_ENABLE
     ap2_led_set_manual_control(1);

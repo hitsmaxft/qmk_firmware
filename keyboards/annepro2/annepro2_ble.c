@@ -16,6 +16,7 @@
 
 #include "annepro2_ble.h"
 #include "ch.h"
+#include "eeconfig.h"
 #include "hal.h"
 #include "host.h"
 #include "host_driver.h"
@@ -47,13 +48,15 @@ static void    ap2_ble_mouse(report_mouse_t *report);
 static void    ap2_ble_extra(report_extra_t *report);
 static void    ap2_ble_keyboard(report_keyboard_t *report);
 
-static void ap2_ble_switch_ble_driver(void);
-static void ap2_ble_handle_rx_frame(const uint8_t *frame, uint8_t size);
-static void ap2_ble_handle_command_ack(uint8_t command, uint8_t value);
-static void ap2_ble_reset_rx_parser(uint8_t byte);
-static void ap2_ble_send_broadcast(void);
-static void ap2_ble_send_connect(void);
-static void ap2_ble_start_connect(void);
+static void   ap2_ble_switch_ble_driver(void);
+static void   ap2_ble_handle_rx_frame(const uint8_t *frame, uint8_t size);
+static void   ap2_ble_handle_command_ack(uint8_t command, uint8_t value);
+static void   ap2_ble_reset_rx_parser(uint8_t byte);
+static void   ap2_ble_send_broadcast(void);
+static void   ap2_ble_send_connect(void);
+static void   ap2_ble_start_connect(void);
+static int8_t ap2_ble_read_saved_slot(void);
+static void   ap2_ble_save_slot(int8_t slot);
 #if defined(CONSOLE_ENABLE) && defined(ANNEPRO2_BLE_DEBUG)
 static void ap2_ble_log_rx_frame(const uint8_t *frame, uint8_t size);
 #endif
@@ -145,8 +148,18 @@ void annepro2_ble_bootload(void) {
 }
 
 void annepro2_ble_startup(void) {
-    AP2_BLE_LOG("tx wakeup");
+    last_slot = ap2_ble_read_saved_slot();
+    AP2_BLE_LOG("tx wakeup slot=%d", last_slot);
     sdWrite(&SD1, ble_mcu_wakeup, sizeof(ble_mcu_wakeup));
+}
+
+void annepro2_ble_autoconnect(void) {
+    if (last_slot < 0) {
+        return;
+    }
+
+    AP2_BLE_LOG("auto slot=%d", last_slot);
+    annepro2_ble_broadcast((uint8_t)last_slot);
 }
 
 void annepro2_ble_broadcast(uint8_t port) {
@@ -179,6 +192,7 @@ void annepro2_ble_disconnect(void) {
     ap2_ble_set_state(AP2_BLE_STATE_USB);
     connect_after_broadcast = false;
     command_retries         = 0;
+    ap2_ble_save_slot(-1);
     AP2_BLE_LOG("route usb ble_driver=%u", host_get_driver() == &ap2_ble_driver);
 
     /* This only changes QMK's output route; it does not disconnect the module. */
@@ -312,6 +326,8 @@ static void ap2_ble_handle_command_ack(uint8_t command, uint8_t value) {
 static void ap2_ble_switch_ble_driver(void) {
     connect_after_broadcast = false;
     command_retries         = 0;
+    last_slot               = selected_slot;
+    ap2_ble_save_slot(last_slot);
     ap2_ble_set_state(AP2_BLE_STATE_ACTIVE);
     if (host_get_driver() == &ap2_ble_driver) {
         return;
@@ -384,6 +400,21 @@ static void ap2_ble_reset_rx_parser(uint8_t byte) {
     ble_rx_expected_size = 0;
     if (byte == 0x7b) {
         ble_rx_frame[ble_rx_frame_size++] = byte;
+    }
+}
+
+static int8_t ap2_ble_read_saved_slot(void) {
+    const uint32_t config = eeconfig_read_kb();
+
+    /* Zero disables autoconnect; values 1..4 encode BLE slots 0..3. */
+    return config >= 1 && config <= 4 ? (int8_t)config - 1 : -1;
+}
+
+static void ap2_ble_save_slot(int8_t slot) {
+    const uint32_t config = slot < 0 ? 0 : (uint8_t)slot + 1;
+
+    if (eeconfig_read_kb() != config) {
+        eeconfig_update_kb(config);
     }
 }
 
