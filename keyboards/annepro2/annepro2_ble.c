@@ -48,8 +48,8 @@
 #    define ANNEPRO2_BLE_HANDSHAKE_TIMEOUT 10000
 #endif
 
-#ifndef ANNEPRO2_BLE_SLOT_SWITCH_DELAY
-#    define ANNEPRO2_BLE_SLOT_SWITCH_DELAY 1000
+#ifndef ANNEPRO2_BLE_SLOT_SWITCH_RETRY_DELAY
+#    define ANNEPRO2_BLE_SLOT_SWITCH_RETRY_DELAY 200
 #endif
 
 #if defined(CONSOLE_ENABLE) && defined(ANNEPRO2_BLE_DEBUG)
@@ -74,7 +74,6 @@ static void   ap2_ble_send_connect(void);
 static void   ap2_ble_send_slot_state(void);
 static void   ap2_ble_start_connect(void);
 static void   ap2_ble_start_handshake_wait(void);
-static void   ap2_ble_schedule_connect(uint8_t port);
 static int8_t ap2_ble_read_saved_slot(void);
 static void   ap2_ble_save_slot(int8_t slot);
 #if defined(CONSOLE_ENABLE) && defined(ANNEPRO2_BLE_DEBUG)
@@ -131,7 +130,7 @@ static ap2_ble_state_t ble_state          = AP2_BLE_STATE_USB;
 static int8_t          startup_slot       = -1;
 static int8_t          held_slot          = -1;
 static int8_t          command_slot_state = -1;
-static int8_t          scheduled_slot     = -1;
+static int8_t          switch_retry_slot  = -1;
 static uint8_t         selected_slot;
 static bool            held_slot_broadcast;
 static bool            handshake_timeout_enabled;
@@ -142,7 +141,7 @@ static uint32_t        command_timer;
 static uint32_t        startup_timer;
 static uint32_t        slot_hold_timer;
 static uint32_t        handshake_timer;
-static uint32_t        scheduled_timer;
+static uint32_t        switch_retry_timer;
 static uint8_t         ble_rx_frame[AP2_BLE_RX_MAX_FRAME_SIZE];
 static uint8_t         ble_rx_frame_size;
 static uint8_t         ble_rx_expected_size;
@@ -185,7 +184,7 @@ void annepro2_ble_bootload(void) {
 void annepro2_ble_startup(void) {
     startup_slot         = ap2_ble_read_saved_slot();
     startup_timer        = timer_read32();
-    scheduled_slot       = -1;
+    switch_retry_slot    = -1;
     connect_in_flight    = false;
     handshake_recoveries = 0;
     AP2_BLE_LOG("wake %d", startup_slot);
@@ -202,8 +201,7 @@ void annepro2_ble_connect(uint8_t port) {
         port = 3;
     }
 
-    startup_slot   = -1;
-    scheduled_slot = -1;
+    startup_slot = -1;
     ap2_ble_begin_route_request();
     if (connect_in_flight && ble_state != AP2_BLE_STATE_USB && ble_state != AP2_BLE_STATE_ACTIVE) {
         if (selected_slot == port) {
@@ -213,28 +211,18 @@ void annepro2_ble_connect(uint8_t port) {
 
         const uint8_t previous_slot = selected_slot;
         (void)previous_slot;
-        ap2_ble_set_state(AP2_BLE_STATE_USB);
-        command_slot_state        = -1;
-        connect_in_flight         = false;
-        handshake_timeout_enabled = false;
+        AP2_BLE_LOG("switch connect old=%u next=%u", previous_slot, port);
         handshake_recoveries      = 0;
-        const int8_t saved_slot   = ap2_ble_read_saved_slot();
-        AP2_BLE_LOG("switch connect old=%u next=%u saved=%d", previous_slot, port, saved_slot);
-        if (saved_slot == (int8_t)port) {
-            /*
-             * A pure broadcast of the last known-good profile is the same
-             * sequence used by cold-start reconnect and recovers a BLE module
-             * that is still busy trying another slot.
-             */
-            startup_slot  = port;
-            startup_timer = timer_read32();
-            sdWrite(&SD1, ble_mcu_wakeup, sizeof(ble_mcu_wakeup));
-        } else {
-            ap2_ble_schedule_connect(port);
-        }
+        selected_slot             = port;
+        command_slot_state        = 0;
+        handshake_timeout_enabled = true;
+        switch_retry_slot         = port;
+        switch_retry_timer        = timer_read32();
+        ap2_ble_start_connect();
         return;
     }
 
+    switch_retry_slot         = -1;
     handshake_recoveries      = 0;
     selected_slot             = port;
     command_slot_state        = 0;
@@ -251,7 +239,6 @@ void annepro2_ble_slot_press(uint8_t port) {
         port = 3;
     }
     startup_slot        = -1;
-    scheduled_slot      = -1;
     held_slot           = port;
     held_slot_broadcast = false;
     slot_hold_timer     = timer_read32();
@@ -281,7 +268,7 @@ void annepro2_ble_disconnect(void) {
     startup_slot              = -1;
     held_slot                 = -1;
     held_slot_broadcast       = false;
-    scheduled_slot            = -1;
+    switch_retry_slot         = -1;
     ap2_ble_save_slot(-1);
     AP2_BLE_LOG("route usb ble_driver=%u", host_get_driver() == &ap2_ble_driver);
 
@@ -318,11 +305,13 @@ void annepro2_ble_task(void) {
         ap2_ble_start_broadcast(slot, -1, true);
     }
 
-    if (scheduled_slot >= 0 && timer_elapsed32(scheduled_timer) >= ANNEPRO2_BLE_SLOT_SWITCH_DELAY) {
-        const uint8_t slot = (uint8_t)scheduled_slot;
-        scheduled_slot     = -1;
-        AP2_BLE_LOG("resume connect slot=%u", slot);
-        annepro2_ble_connect(slot);
+    if (switch_retry_slot >= 0 && timer_elapsed32(switch_retry_timer) >= ANNEPRO2_BLE_SLOT_SWITCH_RETRY_DELAY) {
+        const uint8_t slot = (uint8_t)switch_retry_slot;
+        switch_retry_slot  = -1;
+        AP2_BLE_LOG("retry switch connect slot=%u", slot);
+        selected_slot      = slot;
+        command_slot_state = 0;
+        ap2_ble_start_connect();
     }
 
     if (ble_state == AP2_BLE_STATE_WAIT_HANDSHAKE) {
@@ -405,8 +394,8 @@ static void ap2_ble_start_broadcast(uint8_t port, int8_t slot_state, bool handsh
         port = 3;
     }
 
-    startup_slot   = -1;
-    scheduled_slot = -1;
+    startup_slot      = -1;
+    switch_retry_slot = -1;
     ap2_ble_begin_route_request();
     selected_slot             = port;
     command_slot_state        = slot_state;
@@ -458,16 +447,6 @@ static void ap2_ble_start_handshake_wait(void) {
     ap2_ble_set_state(AP2_BLE_STATE_WAIT_HANDSHAKE);
 }
 
-static void ap2_ble_schedule_connect(uint8_t port) {
-    startup_slot              = -1;
-    connect_in_flight         = false;
-    handshake_timeout_enabled = false;
-    command_slot_state        = -1;
-    scheduled_slot            = port;
-    scheduled_timer           = timer_read32();
-    sdWrite(&SD1, ble_mcu_wakeup, sizeof(ble_mcu_wakeup));
-}
-
 static void ap2_ble_handle_command_ack(uint8_t command, uint8_t value) {
     AP2_BLE_LOG("rx command ack=%02X value=%02X state=%u", command, value, (unsigned)ble_state);
 
@@ -493,7 +472,7 @@ static void ap2_ble_handle_command_ack(uint8_t command, uint8_t value) {
 
 static void ap2_ble_switch_ble_driver(void) {
     command_slot_state        = -1;
-    scheduled_slot            = -1;
+    switch_retry_slot         = -1;
     command_retries           = 0;
     handshake_recoveries      = 0;
     handshake_timeout_enabled = false;
@@ -547,8 +526,12 @@ static void ap2_ble_handle_rx_frame(const uint8_t *frame, uint8_t size) {
             AP2_BLE_LOG("tx hid handshake response");
             sdWrite(&SD1, ble_mcu_hid_handshake_response, sizeof(ble_mcu_hid_handshake_response));
             if (route_requested) {
-                AP2_BLE_LOG("rx hid handshake ready");
-                ap2_ble_switch_ble_driver();
+                if (switch_retry_slot >= 0) {
+                    AP2_BLE_LOG("ignore handshake during slot switch");
+                } else {
+                    AP2_BLE_LOG("rx hid handshake ready");
+                    ap2_ble_switch_ble_driver();
+                }
             }
         }
     } else {
