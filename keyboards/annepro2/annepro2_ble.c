@@ -90,6 +90,7 @@ typedef enum {
     AP2_BLE_STATE_WAIT_CONNECT_ACK,
     AP2_BLE_STATE_WAIT_HANDSHAKE,
     AP2_BLE_STATE_ACTIVE,
+    AP2_BLE_STATE_STARTUP_PASSIVE,
 } ap2_ble_state_t;
 
 /* -------------------- Static Local Variables ------------------------------ */
@@ -197,6 +198,15 @@ void annepro2_ble_startup(void) {
     handshake_recoveries = 0;
     AP2_BLE_LOG("wake %d", startup_slot);
     sdWrite(&SD1, ble_mcu_wakeup, sizeof(ble_mcu_wakeup));
+    if (startup_slot >= 0) {
+        /*
+         * Keep the already required wakeup settling delay useful: if the BLE
+         * module restores its bonded link on its own, accept its handshake.
+         * Otherwise the task sends the proven one-shot broadcast at 500 ms.
+         */
+        selected_slot = (uint8_t)startup_slot;
+        ap2_ble_set_state(AP2_BLE_STATE_STARTUP_PASSIVE);
+    }
 }
 
 void annepro2_ble_broadcast(uint8_t port) {
@@ -205,6 +215,9 @@ void annepro2_ble_broadcast(uint8_t port) {
     }
 
     startup_slot = -1;
+    if (ble_state == AP2_BLE_STATE_STARTUP_PASSIVE) {
+        ap2_ble_set_state(AP2_BLE_STATE_USB);
+    }
     if (ap2_ble_operation_pending()) {
         ap2_ble_queue_intent(port, true);
         return;
@@ -221,6 +234,9 @@ void annepro2_ble_connect(uint8_t port) {
     }
 
     startup_slot = -1;
+    if (ble_state == AP2_BLE_STATE_STARTUP_PASSIVE) {
+        ap2_ble_set_state(AP2_BLE_STATE_USB);
+    }
     ap2_ble_begin_route_request();
     if (ap2_ble_operation_pending()) {
         if (selected_slot == port) {
@@ -245,6 +261,9 @@ void annepro2_ble_slot_press(uint8_t port) {
      */
     if (port > 3) {
         port = 3;
+    }
+    if (ble_state == AP2_BLE_STATE_STARTUP_PASSIVE) {
+        ap2_ble_set_state(AP2_BLE_STATE_USB);
     }
     startup_slot        = -1;
     held_slot           = port;
@@ -308,7 +327,7 @@ void annepro2_ble_task(void) {
     if (startup_slot >= 0 && timer_elapsed32(startup_timer) >= ANNEPRO2_BLE_STARTUP_DELAY) {
         const uint8_t slot = (uint8_t)startup_slot;
         startup_slot       = -1;
-        AP2_BLE_LOG("auto %u recovery=%u", slot, handshake_recoveries);
+        AP2_BLE_LOG("auto %u recovery=%u after passive window", slot, handshake_recoveries);
         ap2_ble_start_broadcast(slot, -1, true);
     }
 
@@ -515,6 +534,7 @@ static void ap2_ble_handle_command_ack(uint8_t command, uint8_t value) {
 
 static void ap2_ble_switch_ble_driver(void) {
     command_slot_state        = -1;
+    startup_slot              = -1;
     command_retries           = 0;
     handshake_recoveries      = 0;
     handshake_timeout_enabled = false;
