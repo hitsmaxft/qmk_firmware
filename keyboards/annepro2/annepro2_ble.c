@@ -36,6 +36,10 @@
 #    define ANNEPRO2_BLE_COMMAND_RETRIES 2
 #endif
 
+#ifndef ANNEPRO2_BLE_STARTUP_DELAY
+#    define ANNEPRO2_BLE_STARTUP_DELAY 500
+#endif
+
 #if defined(CONSOLE_ENABLE) && defined(ANNEPRO2_BLE_DEBUG)
 #    define AP2_BLE_LOG(fmt, ...) uprintf("AP2 BLE %08lX " fmt "\n", (unsigned long)timer_read32(), ##__VA_ARGS__)
 #else
@@ -103,11 +107,14 @@ static uint8_t ble_mcu_bootload[11] = {0x7b, 0x10, 0x51, 0x10, 0x03, 0x00, 0x00,
 
 static host_driver_t  *last_host_driver = NULL;
 static ap2_ble_state_t ble_state        = AP2_BLE_STATE_USB;
+/* Keep the persisted boot choice separate from the current-session heuristic. */
 static int8_t          last_slot        = -1;
+static int8_t          startup_slot     = -1;
 static uint8_t         selected_slot;
 static bool            connect_after_broadcast;
 static uint8_t         command_retries;
 static uint32_t        command_timer;
+static uint32_t        startup_timer;
 static uint8_t         ble_rx_frame[AP2_BLE_RX_MAX_FRAME_SIZE];
 static uint8_t         ble_rx_frame_size;
 static uint8_t         ble_rx_expected_size;
@@ -148,18 +155,10 @@ void annepro2_ble_bootload(void) {
 }
 
 void annepro2_ble_startup(void) {
-    last_slot = ap2_ble_read_saved_slot();
-    AP2_BLE_LOG("tx wakeup slot=%d", last_slot);
+    startup_slot  = ap2_ble_read_saved_slot();
+    startup_timer = timer_read32();
+    AP2_BLE_LOG("wake %d", startup_slot);
     sdWrite(&SD1, ble_mcu_wakeup, sizeof(ble_mcu_wakeup));
-}
-
-void annepro2_ble_autoconnect(void) {
-    if (last_slot < 0) {
-        return;
-    }
-
-    AP2_BLE_LOG("auto slot=%d", last_slot);
-    annepro2_ble_broadcast((uint8_t)last_slot);
 }
 
 void annepro2_ble_broadcast(uint8_t port) {
@@ -168,6 +167,7 @@ void annepro2_ble_broadcast(uint8_t port) {
     }
     const bool reconnect = last_slot == (int8_t)port;
 
+    startup_slot = -1;
     ap2_ble_begin_route_request();
     selected_slot           = port;
     connect_after_broadcast = reconnect;
@@ -181,6 +181,7 @@ void annepro2_ble_connect(uint8_t port) {
     if (port > 3) {
         port = 3;
     }
+    startup_slot = -1;
     ap2_ble_begin_route_request();
     selected_slot           = port;
     last_slot               = port;
@@ -192,6 +193,7 @@ void annepro2_ble_disconnect(void) {
     ap2_ble_set_state(AP2_BLE_STATE_USB);
     connect_after_broadcast = false;
     command_retries         = 0;
+    startup_slot            = -1;
     ap2_ble_save_slot(-1);
     AP2_BLE_LOG("route usb ble_driver=%u", host_get_driver() == &ap2_ble_driver);
 
@@ -216,6 +218,13 @@ void annepro2_ble_unpair(void) {
 }
 
 void annepro2_ble_task(void) {
+    if (startup_slot >= 0 && timer_elapsed32(startup_timer) >= ANNEPRO2_BLE_STARTUP_DELAY) {
+        const uint8_t slot = (uint8_t)startup_slot;
+        startup_slot       = -1;
+        AP2_BLE_LOG("auto %u", slot);
+        annepro2_ble_broadcast(slot);
+    }
+
     if (ble_state != AP2_BLE_STATE_WAIT_BROADCAST_ACK && ble_state != AP2_BLE_STATE_WAIT_CONNECT_ACK) {
         return;
     }
