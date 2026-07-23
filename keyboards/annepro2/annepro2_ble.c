@@ -124,6 +124,11 @@ static uint8_t ble_mcu_hid_handshake_response[12] = {
     0x7b, 0x12, 0x43, 0x00, 0x04, 0x00, 0x00, 0x7d, 0x20, 0x0c, 0x00, 0x00,
 };
 
+/* Reply emitted by the official keyboard MCU for an incoming 0x20/0x07. */
+static uint8_t ble_mcu_state_sync_response[10] = {
+    0x7b, 0x12, 0x43, 0x00, 0x03, 0x00, 0x00, 0x7d, 0x20, 0x07,
+};
+
 static uint8_t ble_mcu_bootload[11] = {0x7b, 0x10, 0x51, 0x10, 0x03, 0x00, 0x00, 0x7d, 0x02, 0x01, 0x01};
 
 static host_driver_t  *last_host_driver   = NULL;
@@ -533,6 +538,16 @@ static void ap2_ble_handle_rx_frame(const uint8_t *frame, uint8_t size) {
 
         if (frame[4] == 0x03 && frame[5] == 0x00 && frame[8] == 0x40 && (frame[9] == 0x01 || frame[9] == 0x04)) {
             ap2_ble_handle_command_ack(frame[9], frame[10]);
+        }
+
+        /*
+         * The official keyboard MCU preserves the value and reverses the
+         * routing field when replying to this state-sync request.
+         */
+        if (frame[4] == 0x03 && frame[5] == 0x00 && frame[8] == 0x20 && frame[9] == 0x07) {
+            AP2_BLE_LOG("tx state sync response value=%02X", frame[10]);
+            sdWrite(&SD1, ble_mcu_state_sync_response, sizeof(ble_mcu_state_sync_response));
+            sdPut(&SD1, frame[10]);
         }
 
         /*
