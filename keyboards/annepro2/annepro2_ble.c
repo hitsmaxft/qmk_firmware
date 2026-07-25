@@ -15,6 +15,7 @@
 */
 
 #include "annepro2_ble.h"
+#include "annepro2_ble_parser.h"
 #include "annepro2_ble_profile.h"
 #include "annepro2_ble_state.h"
 #include "ch.h"
@@ -25,10 +26,6 @@
 #include "print.h"
 #include "report.h"
 #include "timer.h"
-
-#define AP2_BLE_RX_HEADER_SIZE 8
-#define AP2_BLE_RX_MAX_PAYLOAD 32
-#define AP2_BLE_RX_MAX_FRAME_SIZE (AP2_BLE_RX_HEADER_SIZE + AP2_BLE_RX_MAX_PAYLOAD)
 
 #if defined(CONSOLE_ENABLE) && defined(ANNEPRO2_BLE_DEBUG)
 #    define AP2_BLE_LOG(fmt, ...) uprintf("AP2 BLE %08lX " fmt "\n", (unsigned long)timer_read32(), ##__VA_ARGS__)
@@ -46,7 +43,7 @@ static void   ap2_ble_switch_ble_driver(void);
 static void   ap2_ble_execute_actions(ap2_ble_actions_t actions);
 static void   ap2_ble_handle_rx_frame(const uint8_t *frame, uint8_t size);
 static void   ap2_ble_handle_command_ack(uint8_t command, uint8_t value);
-static void   ap2_ble_reset_rx_parser(uint8_t byte);
+static void   ap2_ble_reset_rx_parser(void);
 static void   ap2_ble_send_broadcast(void);
 static void   ap2_ble_send_connect(void);
 static void   ap2_ble_send_slot_state(void);
@@ -101,9 +98,7 @@ static uint8_t ble_mcu_bootload[11] = {0x7b, 0x10, 0x51, 0x10, 0x03, 0x00, 0x00,
 
 static host_driver_t         *last_host_driver = NULL;
 static ap2_ble_state_t        ble_state;
-static uint8_t                ble_rx_frame[AP2_BLE_RX_MAX_FRAME_SIZE];
-static uint8_t                ble_rx_frame_size;
-static uint8_t                ble_rx_expected_size;
+static annepro2_ble_parser_t  ble_rx_parser;
 static annepro2_ble_profile_t ble_profile = ANNEPRO2_BLE_DEFAULT_PROFILE;
 #if defined(CONSOLE_ENABLE) && defined(ANNEPRO2_BLE_DEBUG)
 static uint8_t ble_debug_keyboard_reports;
@@ -170,13 +165,13 @@ void annepro2_ble_slot_release(uint8_t port) {
 void annepro2_ble_disconnect(void) {
     AP2_BLE_LOG("disconnect");
     ap2_ble_execute_actions(ap2_ble_state_disconnect(&ble_state));
-    ap2_ble_reset_rx_parser(0);
+    ap2_ble_reset_rx_parser();
 }
 
 void annepro2_ble_unpair(void) {
     AP2_BLE_LOG("tx unpair");
     ap2_ble_execute_actions(ap2_ble_state_unpair(&ble_state));
-    ap2_ble_reset_rx_parser(0);
+    ap2_ble_reset_rx_parser();
 }
 
 annepro2_ble_profile_t annepro2_ble_get_profile(void) {
@@ -203,39 +198,33 @@ void annepro2_ble_set_profile(annepro2_ble_profile_t profile) {
 }
 
 void annepro2_ble_task(void) {
-    ap2_ble_execute_actions(ap2_ble_state_task(&ble_state, timer_read32()));
+    const uint32_t now = timer_read32();
+    if (annepro2_ble_parser_expire(&ble_rx_parser, now)) {
+        AP2_BLE_LOG("rx partial timeout");
+    }
+    ap2_ble_execute_actions(ap2_ble_state_task(&ble_state, now));
 }
 
 void annepro2_ble_rx_byte(uint8_t byte) {
-    if (ble_rx_frame_size == 0) {
-        if (byte == 0x7b) {
-            ble_rx_frame[ble_rx_frame_size++] = byte;
-        }
-        return;
-    }
+    const uint8_t                   *frame;
+    uint8_t                          size;
+    const annepro2_ble_parse_event_t event = annepro2_ble_parser_feed(&ble_rx_parser, byte, timer_read32(), &frame, &size);
 
-    ble_rx_frame[ble_rx_frame_size++] = byte;
-
-    if (ble_rx_frame_size == 5) {
-        const uint8_t payload_size = ble_rx_frame[4];
-        if (payload_size > AP2_BLE_RX_MAX_PAYLOAD) {
-            AP2_BLE_LOG("rx invalid payload_len=%u", payload_size);
-            ap2_ble_reset_rx_parser(byte);
-            return;
-        }
-        ble_rx_expected_size = AP2_BLE_RX_HEADER_SIZE + payload_size;
-    }
-
-    if (ble_rx_frame_size == AP2_BLE_RX_HEADER_SIZE && ble_rx_frame[7] != 0x7d) {
-        AP2_BLE_LOG("rx invalid delimiter=%02X", ble_rx_frame[7]);
-        ap2_ble_reset_rx_parser(byte);
-        return;
-    }
-
-    if (ble_rx_expected_size != 0 && ble_rx_frame_size == ble_rx_expected_size) {
-        ap2_ble_handle_rx_frame(ble_rx_frame, ble_rx_frame_size);
-        ble_rx_frame_size    = 0;
-        ble_rx_expected_size = 0;
+    switch (event) {
+        case ANNEPRO2_BLE_PARSE_FRAME:
+            ap2_ble_handle_rx_frame(frame, size);
+            break;
+        case ANNEPRO2_BLE_PARSE_TIMEOUT:
+            AP2_BLE_LOG("rx partial timeout");
+            break;
+        case ANNEPRO2_BLE_PARSE_INVALID_LENGTH:
+            AP2_BLE_LOG("rx invalid length");
+            break;
+        case ANNEPRO2_BLE_PARSE_INVALID_DELIMITER:
+            AP2_BLE_LOG("rx invalid delimiter");
+            break;
+        case ANNEPRO2_BLE_PARSE_NONE:
+            break;
     }
 }
 
@@ -382,12 +371,8 @@ static void ap2_ble_log_rx_frame(const uint8_t *frame, uint8_t size) {
 }
 #endif
 
-static void ap2_ble_reset_rx_parser(uint8_t byte) {
-    ble_rx_frame_size    = 0;
-    ble_rx_expected_size = 0;
-    if (byte == 0x7b) {
-        ble_rx_frame[ble_rx_frame_size++] = byte;
-    }
+static void ap2_ble_reset_rx_parser(void) {
+    annepro2_ble_parser_reset(&ble_rx_parser);
 }
 
 static int8_t ap2_ble_read_saved_slot(void) {

@@ -62,6 +62,47 @@ static void test_tap_and_hold(void) {
     assert(ap2_ble_state_slot_release(&state, 3, 1501) == AP2_BLE_ACTION_NONE);
 }
 
+static void test_all_four_slots_connect_and_pair(void) {
+    for (uint8_t slot = 0; slot < 4; slot++) {
+        ap2_ble_state_t state;
+        ap2_ble_state_reset(&state);
+
+        ap2_ble_actions_t actions = ap2_ble_state_connect(&state, slot, 100);
+        assert(has(actions, AP2_BLE_ACTION_ROUTE_USB));
+        assert(has(actions, AP2_BLE_ACTION_SEND_SLOT_STATE));
+        assert(has(actions, AP2_BLE_ACTION_SEND_CONNECT));
+        assert(state.selected_slot == slot);
+        assert(state.state == AP2_BLE_STATE_WAIT_CONNECT_ACK);
+
+        assert(ap2_ble_state_command_ack(&state, 0x04, 200) == AP2_BLE_ACTION_NONE);
+        assert(state.state == AP2_BLE_STATE_WAIT_HANDSHAKE);
+        actions = ap2_ble_state_handshake(&state);
+        assert(has(actions, AP2_BLE_ACTION_ROUTE_BLE));
+        assert(has(actions, AP2_BLE_ACTION_SAVE_SLOT));
+        assert(state.state == AP2_BLE_STATE_ACTIVE);
+        assert(state.selected_slot == slot);
+
+        actions = ap2_ble_state_disconnect(&state);
+        assert(has(actions, AP2_BLE_ACTION_ROUTE_USB));
+        assert(has(actions, AP2_BLE_ACTION_CLEAR_SLOT));
+
+        actions = ap2_ble_state_broadcast(&state, slot, 300);
+        assert(has(actions, AP2_BLE_ACTION_ROUTE_USB));
+        assert(has(actions, AP2_BLE_ACTION_SEND_SLOT_STATE));
+        assert(has(actions, AP2_BLE_ACTION_SEND_BROADCAST));
+        assert(state.selected_slot == slot);
+        assert(state.state == AP2_BLE_STATE_WAIT_BROADCAST_ACK);
+
+        assert(ap2_ble_state_command_ack(&state, 0x01, 400) == AP2_BLE_ACTION_NONE);
+        assert(state.state == AP2_BLE_STATE_WAIT_HANDSHAKE);
+        actions = ap2_ble_state_handshake(&state);
+        assert(has(actions, AP2_BLE_ACTION_ROUTE_BLE));
+        assert(has(actions, AP2_BLE_ACTION_SAVE_SLOT));
+        assert(state.state == AP2_BLE_STATE_ACTIVE);
+        assert(state.selected_slot == slot);
+    }
+}
+
 static void test_command_retry_and_handshake(void) {
     ap2_ble_state_t state;
     ap2_ble_state_reset(&state);
@@ -192,6 +233,7 @@ static void test_timer_wraparound(void) {
 int main(void) {
     test_startup_restore();
     test_tap_and_hold();
+    test_all_four_slots_connect_and_pair();
     test_command_retry_and_handshake();
     test_ack_is_not_connection();
     test_latest_slot_intent_wins();
