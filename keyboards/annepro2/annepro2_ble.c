@@ -120,7 +120,7 @@ static uint8_t ble_mcu_unpair[10] = {
     0x7b, 0x12, 0x53, 0x00, 0x02, 0x00, 0x00, 0x7d, 0x40, 0x05,
 };
 
-/* Slot-key state sent by the official keyboard MCU after 0x40/0x01 or 0x04. */
+/* One-shot slot-key state sent before the official 0x40/0x01 or 0x04 command. */
 static uint8_t ble_mcu_slot_state[10] = {
     0x7b, 0x12, 0x43, 0x00, 0x04, 0x00, 0x00, 0x7d, 0x20, 0x0b,
 };
@@ -461,17 +461,17 @@ static void ap2_ble_start_broadcast(uint8_t port, int8_t slot_state, bool handsh
 
 static void ap2_ble_send_broadcast(void) {
     AP2_BLE_LOG("tx broadcast slot=%u attempt=%u", selected_slot, command_retries + 1);
+    ap2_ble_send_slot_state();
     sdWrite(&SD1, ble_mcu_start_broadcast, sizeof(ble_mcu_start_broadcast));
     sdPut(&SD1, selected_slot);
-    ap2_ble_send_slot_state();
     command_timer = timer_read32();
 }
 
 static void ap2_ble_send_connect(void) {
     AP2_BLE_LOG("tx connect slot=%u attempt=%u", selected_slot, command_retries + 1);
+    ap2_ble_send_slot_state();
     sdWrite(&SD1, ble_mcu_connect, sizeof(ble_mcu_connect));
     sdPut(&SD1, selected_slot);
-    ap2_ble_send_slot_state();
     command_timer = timer_read32();
 }
 
@@ -481,8 +481,8 @@ static void ap2_ble_send_slot_state(void) {
     }
 
     /*
-     * The stock firmware emits this state once at the edge of a slot action.
-     * It is not part of the retried 0x40/0x01 or 0x40/0x04 transaction.
+     * The stock firmware emits this state once before a slot action. It is not
+     * part of the retried 0x40/0x01 or 0x40/0x04 transaction.
      */
     annepro2_ble_slot_state_t slot_state;
     command_slot_state_pending = false;

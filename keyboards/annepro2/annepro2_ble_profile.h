@@ -39,12 +39,6 @@ typedef struct {
 bool annepro2_ble_encode_consumer(annepro2_ble_profile_t profile, const uint16_t *usages, size_t usage_count, uint8_t out[ANNEPRO2_BLE_CONSUMER_MAX_SIZE], uint8_t *out_size);
 
 /*
- * Decode the two observed HID LED output forms: one byte of LED bits, or a
- * report ID followed by LED bits. No UART opcode assumptions are made here.
- */
-bool annepro2_ble_decode_leds(const uint8_t *payload, uint8_t payload_size, uint8_t *leds);
-
-/*
  * Encode the one-shot slot-state notification sent before the primary
  * 0x40/0x01 (broadcast) or 0x40/0x04 (connect) command. BLE 2.13 uses a
  * distinct command and action for connect; BLE 2.05 retains the established

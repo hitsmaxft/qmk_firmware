@@ -7,6 +7,7 @@ static void test_consumer_profiles(void) {
     uint8_t  out[ANNEPRO2_BLE_CONSUMER_MAX_SIZE];
     uint8_t  size;
     uint16_t usages[] = {0x00E2, 0x00E9, 0x00B5};
+    uint16_t four_usages[] = {0x00E2, 0x00E9, 0x00B5, 0x00CD};
 
     assert(annepro2_ble_encode_consumer(ANNEPRO2_BLE_PROFILE_C18_205, usages, 3, out, &size));
     assert(size == 4);
@@ -19,21 +20,26 @@ static void test_consumer_profiles(void) {
     assert(out[4] == 0xB5 && out[5] == 0x00);
     assert(out[6] == 0x00 && out[7] == 0x00);
 
+    assert(annepro2_ble_encode_consumer(ANNEPRO2_BLE_PROFILE_C18_205, NULL, 0, out, &size));
+    assert(size == 4 && out[0] == 0 && out[1] == 0 && out[2] == 0 && out[3] == 0);
+
+    assert(annepro2_ble_encode_consumer(ANNEPRO2_BLE_PROFILE_AP2D_213, four_usages, 4, out, &size));
+    assert(size == 8);
+    assert(out[0] == 0xE2 && out[1] == 0x00);
+    assert(out[2] == 0xE9 && out[3] == 0x00);
+    assert(out[4] == 0xB5 && out[5] == 0x00);
+    assert(out[6] == 0xCD && out[7] == 0x00);
+
+    assert(annepro2_ble_encode_consumer(ANNEPRO2_BLE_PROFILE_AP2D_213, NULL, 0, out, &size));
+    assert(size == 8);
+    for (uint8_t i = 0; i < size; i++) {
+        assert(out[i] == 0);
+    }
+
     uint16_t unsupported = 0x0183;
     assert(!annepro2_ble_encode_consumer(ANNEPRO2_BLE_PROFILE_C18_205, &unsupported, 1, out, &size));
-    assert(!annepro2_ble_encode_consumer(ANNEPRO2_BLE_PROFILE_AP2D_213, usages, 5, out, &size));
-}
-
-static void test_led_forms(void) {
-    uint8_t leds;
-    uint8_t one[] = {0x02};
-    uint8_t two[] = {0x01, 0x05};
-    uint8_t bad[] = {0x02, 0x05};
-
-    assert(annepro2_ble_decode_leds(one, sizeof(one), &leds) && leds == 0x02);
-    assert(annepro2_ble_decode_leds(two, sizeof(two), &leds) && leds == 0x05);
-    assert(!annepro2_ble_decode_leds(bad, sizeof(bad), &leds));
-    assert(!annepro2_ble_decode_leds(one, 0, &leds));
+    assert(!annepro2_ble_encode_consumer(ANNEPRO2_BLE_PROFILE_AP2D_213, four_usages, 5, out, &size));
+    assert(!annepro2_ble_encode_consumer((annepro2_ble_profile_t)2, usages, 1, out, &size));
 }
 
 static void test_slot_state_profiles(void) {
@@ -75,7 +81,6 @@ static void test_config_roundtrip_and_corruption(void) {
 
 int main(void) {
     test_consumer_profiles();
-    test_led_forms();
     test_slot_state_profiles();
     test_config_roundtrip_and_corruption();
     return 0;

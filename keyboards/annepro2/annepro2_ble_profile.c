@@ -90,18 +90,6 @@ bool annepro2_ble_encode_consumer(annepro2_ble_profile_t profile, const uint16_t
     return true;
 }
 
-bool annepro2_ble_decode_leds(const uint8_t *payload, uint8_t payload_size, uint8_t *leds) {
-    if (payload_size == 1) {
-        *leds = payload[0];
-        return true;
-    }
-    if (payload_size == 2 && payload[0] == 0x01) {
-        *leds = payload[1];
-        return true;
-    }
-    return false;
-}
-
 bool annepro2_ble_encode_slot_state(annepro2_ble_profile_t profile, bool broadcast, annepro2_ble_slot_state_t *state) {
     if (profile == ANNEPRO2_BLE_PROFILE_C18_205) {
         state->command = 0x0B;
