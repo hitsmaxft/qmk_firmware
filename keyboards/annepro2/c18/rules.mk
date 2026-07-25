@@ -15,7 +15,7 @@ PROGRAM_CMD = annepro2_tools --boot $(BUILD_DIR)/$(TARGET).bin
 
 # Anne Pro 2
 SRC = \
-	annepro2_ble.c \
+	c18/annepro2_ble.c \
 	annepro2_ble_parser.c \
 	annepro2_ble_profile.c \
 	annepro2_ble_state.c \
