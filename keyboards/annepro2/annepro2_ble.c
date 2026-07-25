@@ -27,19 +27,21 @@ static void    ap2_ble_mouse(report_mouse_t *report);
 static void    ap2_ble_extra(report_extra_t *report);
 static void    ap2_ble_keyboard(report_keyboard_t *report);
 
-static void ap2_ble_switch_ble_driver(void);
+static void ap2_ble_swtich_ble_driver(void);
 
 /* -------------------- Static Local Variables ------------------------------ */
-static host_driver_t ap2_ble_driver = {ap2_ble_leds, ap2_ble_keyboard, NULL, ap2_ble_mouse, ap2_ble_extra};
+static host_driver_t ap2_ble_driver = {
+    ap2_ble_leds, ap2_ble_keyboard, NULL, ap2_ble_mouse, ap2_ble_extra
+};
 
 static uint8_t ble_mcu_wakeup[11] = {0x7b, 0x12, 0x53, 0x00, 0x03, 0x00, 0x01, 0x7d, 0x02, 0x01, 0x02};
 
 static uint8_t ble_mcu_start_broadcast[10] = {
-    0x7b, 0x12, 0x53, 0x00, 0x03, 0x00, 0x00, 0x7d, 0x40, 0x01, // Broadcast ID[0-3]
+    0x7b, 0x12, 0x53, 0x00, 0x03, 0x00, 0x00, 0x7d, 0x40, 0x01,  // Broadcast ID[0-3]
 };
 
 static uint8_t ble_mcu_connect[10] = {
-    0x7b, 0x12, 0x53, 0x00, 0x03, 0x00, 0x00, 0x7d, 0x40, 0x04, // Connect ID [0-3]
+    0x7b, 0x12, 0x53, 0x00, 0x03, 0x00, 0x00, 0x7d, 0x40, 0x04,  // Connect ID [0-3]
 };
 
 static uint8_t ble_mcu_send_report[10] = {
@@ -59,30 +61,27 @@ static uint8_t ble_mcu_bootload[11] = {0x7b, 0x10, 0x51, 0x10, 0x03, 0x00, 0x00,
 static host_driver_t *last_host_driver = NULL;
 #ifdef NKRO_ENABLE
 static bool lastNkroStatus = false;
-#endif // NKRO_ENABLE
+#endif  // NKRO_ENABLE
 
 /* -------------------- Public Function Implementation ---------------------- */
 
-void annepro2_ble_bootload(void) {
-    sdWrite(&SD1, ble_mcu_bootload, sizeof(ble_mcu_bootload));
-}
+void annepro2_ble_bootload(void) { sdWrite(&SD1, ble_mcu_bootload, sizeof(ble_mcu_bootload)); }
 
-void annepro2_ble_startup(void) {
-    sdWrite(&SD1, ble_mcu_wakeup, sizeof(ble_mcu_wakeup));
-}
+void annepro2_ble_startup(void) { sdWrite(&SD1, ble_mcu_wakeup, sizeof(ble_mcu_wakeup)); }
 
 void annepro2_ble_broadcast(uint8_t port) {
     if (port > 3) {
         port = 3;
     }
+    // sdPut(&SD1, 0x00);
     sdWrite(&SD1, ble_mcu_start_broadcast, sizeof(ble_mcu_start_broadcast));
     sdPut(&SD1, port);
     sdPut(&SD1, 0x00);
-    static int last_broadcast = -1;
-    if (last_broadcast == port) {
+    static int lastBroadcast = -1;
+    if (lastBroadcast == port) {
         annepro2_ble_connect(port);
     }
-    last_broadcast = port;
+    lastBroadcast = port;
 }
 
 void annepro2_ble_connect(uint8_t port) {
@@ -92,7 +91,7 @@ void annepro2_ble_connect(uint8_t port) {
     sdWrite(&SD1, ble_mcu_connect, sizeof(ble_mcu_connect));
     sdPut(&SD1, port);
     sdPut(&SD1, 0x00);
-    ap2_ble_switch_ble_driver();
+    ap2_ble_swtich_ble_driver();
 }
 
 void annepro2_ble_slot_press(uint8_t port) {
@@ -105,6 +104,7 @@ void annepro2_ble_slot_release(uint8_t port) {
 }
 
 void annepro2_ble_disconnect(void) {
+    /* Skip if the driver is already enabled */
     if (host_get_driver() != &ap2_ble_driver) {
         return;
     }
@@ -117,6 +117,7 @@ void annepro2_ble_disconnect(void) {
 }
 
 void annepro2_ble_unpair(void) {
+    // sdPut(&SD1, 0x0);
     sdWrite(&SD1, ble_mcu_unpair, sizeof(ble_mcu_unpair));
 }
 
@@ -136,7 +137,7 @@ void annepro2_ble_rx_byte(uint8_t byte) {
 }
 
 /* ------------------- Static Function Implementation ----------------------- */
-static void ap2_ble_switch_ble_driver(void) {
+static void ap2_ble_swtich_ble_driver(void) {
     if (host_get_driver() == &ap2_ble_driver) {
         return;
     }
@@ -150,12 +151,12 @@ static void ap2_ble_switch_ble_driver(void) {
 }
 
 static uint8_t ap2_ble_leds(void) {
-    return 0;
+    return 0;  // TODO: Figure out how to obtain LED status
 }
 
 static void ap2_ble_mouse(report_mouse_t *report) {}
 
-static inline uint16_t consumer_to_ap2(uint16_t usage) {
+static inline uint16_t CONSUMER2AP2(uint16_t usage) {
     switch (usage) {
         case AUDIO_VOL_DOWN:
             return 0x04;
@@ -178,12 +179,15 @@ static void ap2_ble_extra(report_extra_t *report) {
     if (report->report_id == REPORT_ID_CONSUMER) {
         sdPut(&SD1, 0x0);
         sdWrite(&SD1, ble_mcu_send_consumer_report, sizeof(ble_mcu_send_consumer_report));
-        sdPut(&SD1, consumer_to_ap2(report->usage));
+        sdPut(&SD1, CONSUMER2AP2(report->usage));
         static const uint8_t dummy[3] = {0};
         sdWrite(&SD1, dummy, sizeof(dummy));
     }
 }
 
+/*!
+ * @brief  Send keyboard HID report for Bluetooth driver
+ */
 static void ap2_ble_keyboard(report_keyboard_t *report) {
     sdPut(&SD1, 0x0);
     sdWrite(&SD1, ble_mcu_send_report, sizeof(ble_mcu_send_report));
