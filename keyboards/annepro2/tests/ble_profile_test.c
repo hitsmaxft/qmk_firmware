@@ -36,6 +36,22 @@ static void test_led_forms(void) {
     assert(!annepro2_ble_decode_leds(one, 0, &leds));
 }
 
+static void test_slot_state_profiles(void) {
+    annepro2_ble_slot_state_t state;
+
+    assert(annepro2_ble_encode_slot_state(ANNEPRO2_BLE_PROFILE_C18_205, true, &state));
+    assert(state.command == 0x0B && state.action == 1);
+    assert(annepro2_ble_encode_slot_state(ANNEPRO2_BLE_PROFILE_C18_205, false, &state));
+    assert(state.command == 0x0B && state.action == 0);
+
+    assert(annepro2_ble_encode_slot_state(ANNEPRO2_BLE_PROFILE_AP2D_213, true, &state));
+    assert(state.command == 0x0B && state.action == 1);
+    assert(annepro2_ble_encode_slot_state(ANNEPRO2_BLE_PROFILE_AP2D_213, false, &state));
+    assert(state.command == 0x24 && state.action == 2);
+
+    assert(!annepro2_ble_encode_slot_state((annepro2_ble_profile_t)2, true, &state));
+}
+
 static void test_config_roundtrip_and_corruption(void) {
     for (int profile = ANNEPRO2_BLE_PROFILE_C18_205; profile <= ANNEPRO2_BLE_PROFILE_AP2D_213; profile++) {
         for (int slot = -1; slot <= 3; slot++) {
@@ -60,6 +76,7 @@ static void test_config_roundtrip_and_corruption(void) {
 int main(void) {
     test_consumer_profiles();
     test_led_forms();
+    test_slot_state_profiles();
     test_config_roundtrip_and_corruption();
     return 0;
 }

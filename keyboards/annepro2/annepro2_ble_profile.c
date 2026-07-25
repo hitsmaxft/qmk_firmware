@@ -102,6 +102,22 @@ bool annepro2_ble_decode_leds(const uint8_t *payload, uint8_t payload_size, uint
     return false;
 }
 
+bool annepro2_ble_encode_slot_state(annepro2_ble_profile_t profile, bool broadcast, annepro2_ble_slot_state_t *state) {
+    if (profile == ANNEPRO2_BLE_PROFILE_C18_205) {
+        state->command = 0x0B;
+        state->action  = broadcast ? 1 : 0;
+        return true;
+    }
+
+    if (profile == ANNEPRO2_BLE_PROFILE_AP2D_213) {
+        state->command = broadcast ? 0x0B : 0x24;
+        state->action  = broadcast ? 1 : 2;
+        return true;
+    }
+
+    return false;
+}
+
 bool annepro2_ble_encode_config(annepro2_ble_profile_t profile, int8_t slot, uint32_t *config) {
     if ((profile != ANNEPRO2_BLE_PROFILE_C18_205 && profile != ANNEPRO2_BLE_PROFILE_AP2D_213) || slot < -1 || slot > 3) {
         return false;

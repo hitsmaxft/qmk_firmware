@@ -42,8 +42,6 @@ static const SerialConfig ble_uart_config = {
 
 static uint8_t led_mcu_wakeup[11] = {0x7b, 0x10, 0x43, 0x10, 0x03, 0x00, 0x00, 0x7d, 0x02, 0x01, 0x02};
 
-ble_capslock_t ble_capslock = {._dummy = {0}, .caps_lock = false};
-
 static void annepro2_ble_drain_rx(void) {
     while (!sdGetWouldBlock(&SD1)) {
         annepro2_ble_rx_byte((uint8_t)sdGet(&SD1));

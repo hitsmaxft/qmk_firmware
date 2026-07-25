@@ -26,6 +26,11 @@ typedef enum {
 #define ANNEPRO2_BLE_CONSUMER_213_SIZE 8
 #define ANNEPRO2_BLE_CONSUMER_MAX_SIZE ANNEPRO2_BLE_CONSUMER_213_SIZE
 
+typedef struct {
+    uint8_t command;
+    uint8_t action;
+} annepro2_ble_slot_state_t;
+
 /*
  * Encode QMK Consumer usages for the selected BLE HID report map.
  * AP2D BLE 2.13 accepts up to four 16-bit usages; BLE 2.05 accepts only
@@ -38,6 +43,14 @@ bool annepro2_ble_encode_consumer(annepro2_ble_profile_t profile, const uint16_t
  * report ID followed by LED bits. No UART opcode assumptions are made here.
  */
 bool annepro2_ble_decode_leds(const uint8_t *payload, uint8_t payload_size, uint8_t *leds);
+
+/*
+ * Encode the one-shot slot-state notification sent before the primary
+ * 0x40/0x01 (broadcast) or 0x40/0x04 (connect) command. BLE 2.13 uses a
+ * distinct command and action for connect; BLE 2.05 retains the established
+ * QMK protocol.
+ */
+bool annepro2_ble_encode_slot_state(annepro2_ble_profile_t profile, bool broadcast, annepro2_ble_slot_state_t *state);
 
 /* Versioned, checksummed 32-bit eeconfig record. Slots are -1 (none) or 0..3. */
 bool annepro2_ble_encode_config(annepro2_ble_profile_t profile, int8_t slot, uint32_t *config);
