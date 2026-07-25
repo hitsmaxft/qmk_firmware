@@ -15,6 +15,7 @@
 */
 
 #include "annepro2_ble.h"
+#include "annepro2_ble_profile.h"
 #include "ch.h"
 #include "eeconfig.h"
 #include "hal.h"
@@ -80,6 +81,7 @@ static void   ap2_ble_queue_intent(uint8_t port, bool broadcast);
 static void   ap2_ble_dispatch_intent(void);
 static int8_t ap2_ble_read_saved_slot(void);
 static void   ap2_ble_save_slot(int8_t slot);
+static void   ap2_ble_write_config(int8_t slot, annepro2_ble_profile_t profile);
 #if defined(CONSOLE_ENABLE) && defined(ANNEPRO2_BLE_DEBUG)
 static void ap2_ble_log_rx_frame(const uint8_t *frame, uint8_t size);
 #endif
@@ -135,26 +137,27 @@ static uint8_t ble_mcu_state_sync_response[10] = {
 
 static uint8_t ble_mcu_bootload[11] = {0x7b, 0x10, 0x51, 0x10, 0x03, 0x00, 0x00, 0x7d, 0x02, 0x01, 0x01};
 
-static host_driver_t  *last_host_driver   = NULL;
-static ap2_ble_state_t ble_state          = AP2_BLE_STATE_USB;
-static int8_t          startup_slot       = -1;
-static int8_t          held_slot          = -1;
-static int8_t          command_slot_state = -1;
-static int8_t          pending_slot       = -1;
-static uint8_t         selected_slot;
-static bool            held_slot_broadcast;
-static bool            pending_broadcast;
-static bool            handshake_timeout_enabled;
-static uint8_t         command_retries;
-static uint8_t         handshake_recoveries;
-static uint32_t        command_timer;
-static uint32_t        startup_timer;
-static uint32_t        slot_hold_timer;
-static uint32_t        handshake_timer;
-static uint32_t        pending_timer;
-static uint8_t         ble_rx_frame[AP2_BLE_RX_MAX_FRAME_SIZE];
-static uint8_t         ble_rx_frame_size;
-static uint8_t         ble_rx_expected_size;
+static host_driver_t         *last_host_driver   = NULL;
+static ap2_ble_state_t        ble_state          = AP2_BLE_STATE_USB;
+static int8_t                 startup_slot       = -1;
+static int8_t                 held_slot          = -1;
+static int8_t                 command_slot_state = -1;
+static int8_t                 pending_slot       = -1;
+static uint8_t                selected_slot;
+static bool                   held_slot_broadcast;
+static bool                   pending_broadcast;
+static bool                   handshake_timeout_enabled;
+static uint8_t                command_retries;
+static uint8_t                handshake_recoveries;
+static uint32_t               command_timer;
+static uint32_t               startup_timer;
+static uint32_t               slot_hold_timer;
+static uint32_t               handshake_timer;
+static uint32_t               pending_timer;
+static uint8_t                ble_rx_frame[AP2_BLE_RX_MAX_FRAME_SIZE];
+static uint8_t                ble_rx_frame_size;
+static uint8_t                ble_rx_expected_size;
+static annepro2_ble_profile_t ble_profile = ANNEPRO2_BLE_DEFAULT_PROFILE;
 #if defined(CONSOLE_ENABLE) && defined(ANNEPRO2_BLE_DEBUG)
 static uint8_t ble_debug_keyboard_reports;
 #endif
@@ -192,11 +195,18 @@ void annepro2_ble_bootload(void) {
 }
 
 void annepro2_ble_startup(void) {
+    annepro2_ble_profile_t saved_profile;
+    int8_t                 saved_slot;
+    if (annepro2_ble_decode_config(eeconfig_read_kb(), &saved_profile, &saved_slot)) {
+        ble_profile = saved_profile;
+    } else {
+        ble_profile = ANNEPRO2_BLE_DEFAULT_PROFILE;
+    }
     startup_slot         = ap2_ble_read_saved_slot();
     startup_timer        = timer_read32();
     pending_slot         = -1;
     handshake_recoveries = 0;
-    AP2_BLE_LOG("wake %d", startup_slot);
+    AP2_BLE_LOG("wake %d profile=%u", startup_slot, (unsigned)ble_profile);
     sdWrite(&SD1, ble_mcu_wakeup, sizeof(ble_mcu_wakeup));
     if (startup_slot >= 0) {
         /*
@@ -317,6 +327,29 @@ void annepro2_ble_unpair(void) {
     annepro2_ble_disconnect();
 }
 
+annepro2_ble_profile_t annepro2_ble_get_profile(void) {
+    return ble_profile;
+}
+
+void annepro2_ble_set_profile(annepro2_ble_profile_t profile) {
+    if (profile != ANNEPRO2_BLE_PROFILE_C18_205 && profile != ANNEPRO2_BLE_PROFILE_AP2D_213) {
+        return;
+    }
+    if (profile == ble_profile) {
+        return;
+    }
+
+    /*
+     * A slot number belongs to the BLE module's bond database. Clear the
+     * autoconnect selection when changing module profiles so a stale C18 slot
+     * is never replayed to an AP2D module (or vice versa).
+     */
+    annepro2_ble_disconnect();
+    ble_profile = profile;
+    ap2_ble_write_config(-1, ble_profile);
+    AP2_BLE_LOG("profile=%u", (unsigned)ble_profile);
+}
+
 void annepro2_ble_task(void) {
     if (held_slot >= 0 && !held_slot_broadcast && timer_elapsed32(slot_hold_timer) >= ANNEPRO2_BLE_SLOT_HOLD_TIME) {
         held_slot_broadcast = true;
@@ -428,7 +461,6 @@ static void ap2_ble_send_broadcast(void) {
     AP2_BLE_LOG("tx broadcast slot=%u attempt=%u", selected_slot, command_retries + 1);
     sdWrite(&SD1, ble_mcu_start_broadcast, sizeof(ble_mcu_start_broadcast));
     sdPut(&SD1, selected_slot);
-    sdPut(&SD1, 0x00);
     ap2_ble_send_slot_state();
     command_timer = timer_read32();
 }
@@ -437,7 +469,6 @@ static void ap2_ble_send_connect(void) {
     AP2_BLE_LOG("tx connect slot=%u attempt=%u", selected_slot, command_retries + 1);
     sdWrite(&SD1, ble_mcu_connect, sizeof(ble_mcu_connect));
     sdPut(&SD1, selected_slot);
-    sdPut(&SD1, 0x00);
     ap2_ble_send_slot_state();
     command_timer = timer_read32();
 }
@@ -625,14 +656,27 @@ static void ap2_ble_reset_rx_parser(uint8_t byte) {
 }
 
 static int8_t ap2_ble_read_saved_slot(void) {
-    const uint32_t config = eeconfig_read_kb();
+    const uint32_t         config = eeconfig_read_kb();
+    int8_t                 slot;
+    annepro2_ble_profile_t profile;
 
-    /* Zero disables autoconnect; values 1..4 encode BLE slots 0..3. */
+    if (annepro2_ble_decode_config(config, &profile, &slot)) {
+        return slot;
+    }
+
+    /* Migrate the legacy QMK encoding: zero disables, 1..4 select slots 0..3. */
     return config >= 1 && config <= 4 ? (int8_t)config - 1 : -1;
 }
 
 static void ap2_ble_save_slot(int8_t slot) {
-    const uint32_t config = slot < 0 ? 0 : (uint8_t)slot + 1;
+    ap2_ble_write_config(slot, ble_profile);
+}
+
+static void ap2_ble_write_config(int8_t slot, annepro2_ble_profile_t profile) {
+    uint32_t config;
+    if (!annepro2_ble_encode_config(profile, slot, &config)) {
+        return;
+    }
 
     if (eeconfig_read_kb() != config) {
         eeconfig_update_kb(config);
@@ -645,32 +689,24 @@ static uint8_t ap2_ble_leds(void) {
 
 static void ap2_ble_mouse(report_mouse_t *report) {}
 
-static inline uint16_t CONSUMER2AP2(uint16_t usage) {
-    switch (usage) {
-        case AUDIO_VOL_DOWN:
-            return 0x04;
-        case AUDIO_VOL_UP:
-            return 0x02;
-        case AUDIO_MUTE:
-            return 0x01;
-        case TRANSPORT_PLAY_PAUSE:
-            return 0x08;
-        case TRANSPORT_NEXT_TRACK:
-            return 0x10;
-        case TRANSPORT_PREV_TRACK:
-            return 0x20;
-        default:
-            return 0x00;
-    }
-}
-
 static void ap2_ble_extra(report_extra_t *report) {
     if (report->report_id == REPORT_ID_CONSUMER) {
+        uint8_t        payload[ANNEPRO2_BLE_CONSUMER_MAX_SIZE];
+        uint8_t        payload_size;
+        const uint16_t usage       = report->usage;
+        const size_t   usage_count = usage == 0 ? 0 : 1;
+
+        if (!annepro2_ble_encode_consumer(ble_profile, &usage, usage_count, payload, &payload_size)) {
+            AP2_BLE_LOG("consumer unsupported usage=%04X profile=%u", usage, (unsigned)ble_profile);
+            annepro2_ble_encode_consumer(ble_profile, &usage, 0, payload, &payload_size);
+        }
+
+        /* UART payload includes the 0x10/0x08 group and command bytes. */
+        ble_mcu_send_consumer_report[4] = payload_size + 2;
         sdPut(&SD1, 0x0);
         sdWrite(&SD1, ble_mcu_send_consumer_report, sizeof(ble_mcu_send_consumer_report));
-        sdPut(&SD1, CONSUMER2AP2(report->usage));
-        static const uint8_t dummy[3] = {0};
-        sdWrite(&SD1, dummy, sizeof(dummy));
+        sdWrite(&SD1, payload, payload_size);
+        AP2_BLE_LOG("tx consumer usage=%04X bytes=%u profile=%u", usage, payload_size, (unsigned)ble_profile);
     }
 }
 

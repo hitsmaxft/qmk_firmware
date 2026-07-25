@@ -174,6 +174,14 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
                 annepro2_ble_unpair();
                 return false;
 
+            case KC_AP2_BLE205:
+                annepro2_ble_set_profile(ANNEPRO2_BLE_PROFILE_C18_205);
+                return false;
+
+            case KC_AP2_BLE213:
+                annepro2_ble_set_profile(ANNEPRO2_BLE_PROFILE_AP2D_213);
+                return false;
+
             case KC_AP_LED_OFF:
                 ap2_led_disable();
                 break;
