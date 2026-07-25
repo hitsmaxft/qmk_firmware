@@ -20,12 +20,6 @@
 #include <stdint.h>
 #include "ap2_led.h"
 
-typedef struct __attribute__((__packed__)) {
-    uint8_t _dummy[10];
-    bool    caps_lock;
-} ble_capslock_t;
-extern ble_capslock_t ble_capslock;
-
 enum AP2KeyCodes {
     KC_AP2_BT1 = QK_KB_0,
     KC_AP2_BT2,
@@ -33,6 +27,8 @@ enum AP2KeyCodes {
     KC_AP2_BT4,
     KC_AP2_BT_UNPAIR,
     KC_AP2_USB,
+    KC_AP2_BLE205,
+    KC_AP2_BLE213,
     KC_AP_LED_ON,
     KC_AP_LED_OFF,
     KC_AP_LED_TOG,
