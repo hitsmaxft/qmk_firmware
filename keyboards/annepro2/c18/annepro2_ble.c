@@ -27,6 +27,9 @@
 #include "print.h"
 #include "report.h"
 #include "timer.h"
+#if defined(CONSOLE_ENABLE) && defined(ANNEPRO2_BLE_DEBUG)
+#    include "version.h"
+#endif
 
 #if defined(CONSOLE_ENABLE) && defined(ANNEPRO2_BLE_DEBUG)
 #    define AP2_BLE_LOG(fmt, ...) uprintf("AP2 BLE %08lX " fmt "\n", (unsigned long)timer_read32(), ##__VA_ARGS__)
@@ -135,6 +138,11 @@ void annepro2_ble_startup(void) {
         ble_profile = ANNEPRO2_BLE_DEFAULT_PROFILE;
     }
     saved_slot = ap2_ble_read_saved_slot();
+#if defined(QMK_USERSPACE_VERSION)
+    AP2_BLE_LOG("build qmk=%s userspace=%s", QMK_GIT_HASH, QMK_USERSPACE_VERSION);
+#else
+    AP2_BLE_LOG("build qmk=%s", QMK_GIT_HASH);
+#endif
     AP2_BLE_LOG("wake %d profile=%u", saved_slot, (unsigned)ble_profile);
     ap2_ble_execute_actions(ap2_ble_state_startup(&ble_state, saved_slot, timer_read32()));
 }
