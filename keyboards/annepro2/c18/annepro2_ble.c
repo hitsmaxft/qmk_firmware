@@ -24,6 +24,7 @@
 #include "hal.h"
 #include "host.h"
 #include "host_driver.h"
+#include "led.h"
 #include "print.h"
 #include "report.h"
 #include "timer.h"
@@ -104,6 +105,7 @@ static host_driver_t         *last_host_driver = NULL;
 static ap2_ble_state_t        ble_state;
 static annepro2_ble_parser_t  ble_rx_parser;
 static annepro2_ble_profile_t ble_profile = ANNEPRO2_BLE_DEFAULT_PROFILE;
+static led_t                  ble_led_state;
 #if defined(CONSOLE_ENABLE) && defined(ANNEPRO2_BLE_DEBUG)
 static uint8_t ble_debug_keyboard_reports;
 #endif
@@ -113,6 +115,7 @@ static bool lastNkroStatus = false;
 
 static void ap2_ble_begin_route_request(void) {
     /* Do not leave reports routed to an old BLE link while selecting a slot. */
+    ble_led_state.raw = 0;
     if (host_get_driver() == &ap2_ble_driver) {
         clear_keyboard();
 #ifdef NKRO_ENABLE
@@ -344,6 +347,13 @@ static void ap2_ble_handle_rx_frame(const uint8_t *frame, uint8_t size) {
          * routing field when replying to this state-sync request.
          */
         if (frame[4] == 0x03 && frame[5] == 0x00 && frame[8] == 0x20 && frame[9] == 0x07) {
+            bool caps_lock;
+            if (annepro2_ble_decode_caps_lock(frame, size, &caps_lock)) {
+                ble_led_state.caps_lock = caps_lock;
+                AP2_BLE_LOG("rx caps lock=%u leds=%02X", caps_lock, ble_led_state.raw);
+            } else {
+                AP2_BLE_LOG("ignore invalid caps lock value=%02X", frame[10]);
+            }
             AP2_BLE_LOG("tx state sync response value=%02X", frame[10]);
             sdWrite(&SD1, ble_mcu_state_sync_response, sizeof(ble_mcu_state_sync_response));
             sdPut(&SD1, frame[10]);
@@ -413,7 +423,7 @@ static void ap2_ble_write_config(int8_t slot, annepro2_ble_profile_t profile) {
 }
 
 static uint8_t ap2_ble_leds(void) {
-    return 0; // TODO: Figure out how to obtain LED status
+    return ble_led_state.raw;
 }
 
 static void ap2_ble_mouse(report_mouse_t *report) {}

@@ -106,6 +106,29 @@ bool annepro2_ble_encode_slot_state(annepro2_ble_profile_t profile, bool broadca
     return false;
 }
 
+bool annepro2_ble_decode_caps_lock(const uint8_t *frame, size_t size, bool *caps_lock) {
+    static const uint8_t prefix[] = {
+        0x7B, 0x12, 0x35, 0x00, 0x03, 0x00, 0x00, 0x7D, 0x20, 0x07,
+    };
+
+    if (frame == NULL || caps_lock == NULL || size != sizeof(prefix) + 1) {
+        return false;
+    }
+
+    for (size_t i = 0; i < sizeof(prefix); i++) {
+        if (frame[i] != prefix[i]) {
+            return false;
+        }
+    }
+
+    if (frame[sizeof(prefix)] > 1) {
+        return false;
+    }
+
+    *caps_lock = frame[sizeof(prefix)] != 0;
+    return true;
+}
+
 bool annepro2_ble_encode_config(annepro2_ble_profile_t profile, int8_t slot, uint32_t *config) {
     if ((profile != ANNEPRO2_BLE_PROFILE_C18_205 && profile != ANNEPRO2_BLE_PROFILE_AP2D_213) || slot < -1 || slot > 3) {
         return false;

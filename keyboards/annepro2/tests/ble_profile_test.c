@@ -97,6 +97,41 @@ static void test_slot_state_profiles(void) {
     assert(!annepro2_ble_encode_slot_state((annepro2_ble_profile_t)2, true, &state));
 }
 
+static void test_caps_lock_state_sync(void) {
+    uint8_t frame[] = {
+        0x7B, 0x12, 0x35, 0x00, 0x03, 0x00, 0x00, 0x7D, 0x20, 0x07, 0x00,
+    };
+    bool caps_lock = true;
+
+    assert(annepro2_ble_decode_caps_lock(frame, sizeof(frame), &caps_lock));
+    assert(!caps_lock);
+
+    frame[10] = 1;
+    assert(annepro2_ble_decode_caps_lock(frame, sizeof(frame), &caps_lock));
+    assert(caps_lock);
+
+    frame[10] = 2;
+    assert(!annepro2_ble_decode_caps_lock(frame, sizeof(frame), &caps_lock));
+    assert(caps_lock);
+
+    frame[10] = 0;
+    frame[9]  = 0x0C;
+    assert(!annepro2_ble_decode_caps_lock(frame, sizeof(frame), &caps_lock));
+    frame[9] = 0x07;
+
+    frame[8] = 0x40;
+    assert(!annepro2_ble_decode_caps_lock(frame, sizeof(frame), &caps_lock));
+    frame[8] = 0x20;
+
+    frame[4] = 0x04;
+    assert(!annepro2_ble_decode_caps_lock(frame, sizeof(frame), &caps_lock));
+    frame[4] = 0x03;
+
+    assert(!annepro2_ble_decode_caps_lock(frame, sizeof(frame) - 1, &caps_lock));
+    assert(!annepro2_ble_decode_caps_lock(NULL, sizeof(frame), &caps_lock));
+    assert(!annepro2_ble_decode_caps_lock(frame, sizeof(frame), NULL));
+}
+
 static void test_config_roundtrip_and_corruption(void) {
     for (int profile = ANNEPRO2_BLE_PROFILE_C18_205; profile <= ANNEPRO2_BLE_PROFILE_AP2D_213; profile++) {
         for (int slot = -1; slot <= 3; slot++) {
@@ -123,6 +158,7 @@ int main(void) {
     test_consumer_205_all_bits();
     test_consumer_213_preserves_usage_order();
     test_slot_state_profiles();
+    test_caps_lock_state_sync();
     test_config_roundtrip_and_corruption();
     return 0;
 }

@@ -46,6 +46,14 @@ bool annepro2_ble_encode_consumer(annepro2_ble_profile_t profile, const uint16_t
  */
 bool annepro2_ble_encode_slot_state(annepro2_ble_profile_t profile, bool broadcast, annepro2_ble_slot_state_t *state);
 
+/*
+ * Decode the BLE MCU's C18-compatible Caps Lock state-sync frame:
+ *   7B 12 35 00 03 00 00 7D 20 07 VV
+ * Both BLE 2.05 and 2.13 use VV as a normalized boolean. Unknown values and
+ * frames from other protocol routes must not alter QMK's host LED state.
+ */
+bool annepro2_ble_decode_caps_lock(const uint8_t *frame, size_t size, bool *caps_lock);
+
 /* Versioned, checksummed 32-bit eeconfig record. Slots are -1 (none) or 0..3. */
 bool annepro2_ble_encode_config(annepro2_ble_profile_t profile, int8_t slot, uint32_t *config);
 bool annepro2_ble_decode_config(uint32_t config, annepro2_ble_profile_t *profile, int8_t *slot);
