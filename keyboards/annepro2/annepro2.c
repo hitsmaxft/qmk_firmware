@@ -142,16 +142,17 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
                 ap2_led_forward_keypress(record->event.key.row, record->event.key.col);
             }
 
+            annepro2_ble_slot_press(slot);
+#ifndef ANNEPRO2_BLE_STATUS_INDICATOR_ENABLE
             const ap2_led_t blue = {
                 .p.blue  = 0xff,
                 .p.red   = 0x00,
                 .p.green = 0x00,
                 .p.alpha = 0xff,
             };
-
-            annepro2_ble_slot_press(slot);
             /* FIXME: This hardcodes col/row position */
             ap2_led_blink(record->event.key.row, record->event.key.col, blue, 8, 50);
+#endif
         } else {
             annepro2_ble_slot_release(slot);
         }

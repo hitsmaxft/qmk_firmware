@@ -192,7 +192,9 @@ static void test_handshake_timeout_recovery_is_bounded(void) {
 
     ap2_ble_state_command_ack(&state, 0x01, 11000);
     actions = ap2_ble_state_task(&state, 11000 + ANNEPRO2_BLE_HANDSHAKE_TIMEOUT);
-    assert(actions == AP2_BLE_ACTION_ROUTE_USB);
+    assert(has(actions, AP2_BLE_ACTION_ROUTE_USB));
+    assert(has(actions, AP2_BLE_ACTION_NOTIFY_FAILURE));
+    assert(!has(actions, AP2_BLE_ACTION_SEND_WAKEUP));
     assert(state.state == AP2_BLE_STATE_USB);
     assert(state.startup_slot == -1);
     assert(state.handshake_recoveries == 1);

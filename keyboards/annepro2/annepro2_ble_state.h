@@ -56,6 +56,7 @@ typedef enum {
     AP2_BLE_ACTION_SEND_UNPAIR     = 1 << 6,
     AP2_BLE_ACTION_SAVE_SLOT       = 1 << 7,
     AP2_BLE_ACTION_CLEAR_SLOT      = 1 << 8,
+    AP2_BLE_ACTION_NOTIFY_FAILURE  = 1 << 9,
 } ap2_ble_action_t;
 
 typedef uint16_t ap2_ble_actions_t;

@@ -19,6 +19,14 @@
 #include "annepro2.h"
 #include "annepro2_ble_profile.h"
 
+typedef enum {
+    ANNEPRO2_BLE_STATUS_IDLE,
+    ANNEPRO2_BLE_STATUS_ADVERTISING,
+    ANNEPRO2_BLE_STATUS_CONNECTING,
+    ANNEPRO2_BLE_STATUS_CONNECTED,
+    ANNEPRO2_BLE_STATUS_FAILED,
+} annepro2_ble_status_t;
+
 void                   annepro2_ble_bootload(void);
 void                   annepro2_ble_startup(void);
 void                   annepro2_ble_broadcast(uint8_t port);
@@ -30,6 +38,12 @@ void                   annepro2_ble_unpair(void);
 void                   annepro2_ble_task(void);
 annepro2_ble_profile_t annepro2_ble_get_profile(void);
 void                   annepro2_ble_set_profile(annepro2_ble_profile_t profile);
+
+/*
+ * Optional keymap hook for asynchronous BLE status indication.
+ * Slot is zero-based (0..3). The default implementation does nothing.
+ */
+void annepro2_ble_status_changed_user(annepro2_ble_status_t status, uint8_t slot);
 
 /* Feed bytes received from the BLE UART into the AnnePro2 frame parser. */
 void annepro2_ble_rx_byte(uint8_t byte);

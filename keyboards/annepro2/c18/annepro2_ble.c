@@ -34,6 +34,7 @@
 
 #if defined(CONSOLE_ENABLE) && defined(ANNEPRO2_BLE_DEBUG)
 #    define AP2_BLE_LOG(fmt, ...) uprintf("AP2 BLE %08lX " fmt "\n", (unsigned long)timer_read32(), ##__VA_ARGS__)
+#    define AP2_BLE_BUILD_LOG_DELAY 2000
 #else
 #    define AP2_BLE_LOG(fmt, ...)
 #endif
@@ -48,6 +49,7 @@ static void   ap2_ble_switch_ble_driver(void);
 static void   ap2_ble_execute_actions(ap2_ble_actions_t actions);
 static void   ap2_ble_handle_rx_frame(const uint8_t *frame, uint8_t size);
 static void   ap2_ble_handle_command_ack(uint8_t command, uint8_t value);
+static void   ap2_ble_notify_status(annepro2_ble_status_t status);
 static void   ap2_ble_reset_rx_parser(void);
 static void   ap2_ble_send_broadcast(void);
 static void   ap2_ble_send_connect(void);
@@ -56,6 +58,7 @@ static int8_t ap2_ble_read_saved_slot(void);
 static void   ap2_ble_save_slot(int8_t slot);
 static void   ap2_ble_write_config(int8_t slot, annepro2_ble_profile_t profile);
 #if defined(CONSOLE_ENABLE) && defined(ANNEPRO2_BLE_DEBUG)
+static void ap2_ble_log_build(void);
 static void ap2_ble_log_rx_frame(const uint8_t *frame, uint8_t size);
 #endif
 
@@ -107,11 +110,15 @@ static annepro2_ble_parser_t  ble_rx_parser;
 static annepro2_ble_profile_t ble_profile = ANNEPRO2_BLE_DEFAULT_PROFILE;
 static led_t                  ble_led_state;
 #if defined(CONSOLE_ENABLE) && defined(ANNEPRO2_BLE_DEBUG)
-static uint8_t ble_debug_keyboard_reports;
+static uint8_t  ble_debug_keyboard_reports;
+static bool     ble_debug_build_log_pending;
+static uint32_t ble_debug_build_log_timer;
 #endif
 #ifdef NKRO_ENABLE
 static bool lastNkroStatus = false;
 #endif // NKRO_ENABLE
+
+__attribute__((weak)) void annepro2_ble_status_changed_user(annepro2_ble_status_t status, uint8_t slot) {}
 
 static void ap2_ble_begin_route_request(void) {
     /* Do not leave reports routed to an old BLE link while selecting a slot. */
@@ -141,10 +148,10 @@ void annepro2_ble_startup(void) {
         ble_profile = ANNEPRO2_BLE_DEFAULT_PROFILE;
     }
     saved_slot = ap2_ble_read_saved_slot();
-#if defined(QMK_USERSPACE_VERSION)
-    AP2_BLE_LOG("build qmk=%s userspace=%s", QMK_GIT_HASH, QMK_USERSPACE_VERSION);
-#else
-    AP2_BLE_LOG("build qmk=%s", QMK_GIT_HASH);
+#if defined(CONSOLE_ENABLE) && defined(ANNEPRO2_BLE_DEBUG)
+    ap2_ble_log_build();
+    ble_debug_build_log_pending = true;
+    ble_debug_build_log_timer   = timer_read32();
 #endif
     AP2_BLE_LOG("wake %d profile=%u", saved_slot, (unsigned)ble_profile);
     ap2_ble_execute_actions(ap2_ble_state_startup(&ble_state, saved_slot, timer_read32()));
@@ -177,12 +184,14 @@ void annepro2_ble_slot_release(uint8_t port) {
 void annepro2_ble_disconnect(void) {
     AP2_BLE_LOG("disconnect");
     ap2_ble_execute_actions(ap2_ble_state_disconnect(&ble_state));
+    ap2_ble_notify_status(ANNEPRO2_BLE_STATUS_IDLE);
     ap2_ble_reset_rx_parser();
 }
 
 void annepro2_ble_unpair(void) {
     AP2_BLE_LOG("tx unpair");
     ap2_ble_execute_actions(ap2_ble_state_unpair(&ble_state));
+    ap2_ble_notify_status(ANNEPRO2_BLE_STATUS_IDLE);
     ap2_ble_reset_rx_parser();
 }
 
@@ -211,6 +220,12 @@ void annepro2_ble_set_profile(annepro2_ble_profile_t profile) {
 
 void annepro2_ble_task(void) {
     const uint32_t now = timer_read32();
+#if defined(CONSOLE_ENABLE) && defined(ANNEPRO2_BLE_DEBUG)
+    if (ble_debug_build_log_pending && timer_elapsed32(ble_debug_build_log_timer) >= AP2_BLE_BUILD_LOG_DELAY) {
+        ble_debug_build_log_pending = false;
+        ap2_ble_log_build();
+    }
+#endif
     if (annepro2_ble_parser_expire(&ble_rx_parser, now)) {
         AP2_BLE_LOG("rx partial timeout");
     }
@@ -259,9 +274,15 @@ static void ap2_ble_execute_actions(ap2_ble_actions_t actions) {
         ap2_ble_send_slot_state();
     }
     if (actions & AP2_BLE_ACTION_SEND_BROADCAST) {
+        if (ble_state.command_retries == 0) {
+            ap2_ble_notify_status(ble_state.command_slot_broadcast ? ANNEPRO2_BLE_STATUS_ADVERTISING : ANNEPRO2_BLE_STATUS_CONNECTING);
+        }
         ap2_ble_send_broadcast();
     }
     if (actions & AP2_BLE_ACTION_SEND_CONNECT) {
+        if (ble_state.command_retries == 0) {
+            ap2_ble_notify_status(ANNEPRO2_BLE_STATUS_CONNECTING);
+        }
         ap2_ble_send_connect();
     }
     if (actions & AP2_BLE_ACTION_CLEAR_SLOT) {
@@ -269,9 +290,13 @@ static void ap2_ble_execute_actions(ap2_ble_actions_t actions) {
     }
     if (actions & AP2_BLE_ACTION_ROUTE_BLE) {
         ap2_ble_switch_ble_driver();
+        ap2_ble_notify_status(ANNEPRO2_BLE_STATUS_CONNECTED);
     }
     if (actions & AP2_BLE_ACTION_SAVE_SLOT) {
         ap2_ble_save_slot((int8_t)ble_state.selected_slot);
+    }
+    if (actions & AP2_BLE_ACTION_NOTIFY_FAILURE) {
+        ap2_ble_notify_status(ANNEPRO2_BLE_STATUS_FAILED);
     }
 }
 
@@ -312,6 +337,21 @@ static void ap2_ble_handle_command_ack(uint8_t command, uint8_t value) {
         AP2_BLE_LOG("ignore stale command ack=%02X", command);
     }
 }
+
+static void ap2_ble_notify_status(annepro2_ble_status_t status) {
+    AP2_BLE_LOG("status=%u slot=%u", (unsigned)status, ble_state.selected_slot);
+    annepro2_ble_status_changed_user(status, ble_state.selected_slot);
+}
+
+#if defined(CONSOLE_ENABLE) && defined(ANNEPRO2_BLE_DEBUG)
+static void ap2_ble_log_build(void) {
+#    if defined(QMK_USERSPACE_VERSION)
+    AP2_BLE_LOG("build qmk=%s userspace=%s", QMK_GIT_HASH, QMK_USERSPACE_VERSION);
+#    else
+    AP2_BLE_LOG("build qmk=%s", QMK_GIT_HASH);
+#    endif
+}
+#endif
 
 static void ap2_ble_switch_ble_driver(void) {
     if (host_get_driver() == &ap2_ble_driver) {

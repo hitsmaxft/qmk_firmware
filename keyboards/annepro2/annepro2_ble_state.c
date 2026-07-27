@@ -202,6 +202,8 @@ ap2_ble_actions_t ap2_ble_state_task(ap2_ble_state_t *state, uint32_t now) {
             state->startup_slot         = state->selected_slot;
             state->startup_timer        = now;
             actions |= AP2_BLE_ACTION_SEND_WAKEUP;
+        } else {
+            actions |= AP2_BLE_ACTION_NOTIFY_FAILURE;
         }
         return actions;
     }
@@ -232,7 +234,6 @@ ap2_ble_actions_t ap2_ble_state_command_ack(ap2_ble_state_t *state, uint8_t comm
     if (command != 0x01 && command != 0x04) {
         return AP2_BLE_ACTION_NONE;
     }
-
     state->command_retries = 0;
     state->handshake_timer = now;
     state->state           = AP2_BLE_STATE_WAIT_HANDSHAKE;
