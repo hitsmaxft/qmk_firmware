@@ -60,6 +60,7 @@ static void   ap2_ble_send_slot_state(void);
 static int8_t ap2_ble_read_saved_slot(void);
 static void   ap2_ble_save_slot(int8_t slot);
 static void   ap2_ble_write_config(int8_t slot, annepro2_ble_profile_t profile);
+static bool   ap2_ble_profile_supported(annepro2_ble_profile_t profile);
 #if defined(CONSOLE_ENABLE) && defined(ANNEPRO2_BLE_DEBUG)
 static void ap2_ble_log_build(void);
 static void ap2_ble_log_rx_frame(const uint8_t *frame, uint8_t size);
@@ -146,7 +147,7 @@ void annepro2_ble_bootload(void) {
 void annepro2_ble_startup(void) {
     annepro2_ble_profile_t saved_profile;
     int8_t                 saved_slot;
-    if (annepro2_ble_decode_config(eeconfig_read_kb(), &saved_profile, &saved_slot)) {
+    if (annepro2_ble_decode_config(eeconfig_read_kb(), &saved_profile, &saved_slot) && ap2_ble_profile_supported(saved_profile)) {
         ble_profile = saved_profile;
     } else {
         ble_profile = ANNEPRO2_BLE_DEFAULT_PROFILE;
@@ -207,7 +208,7 @@ annepro2_ble_profile_t annepro2_ble_get_profile(void) {
 }
 
 void annepro2_ble_set_profile(annepro2_ble_profile_t profile) {
-    if (profile != ANNEPRO2_BLE_PROFILE_C18_205 && profile != ANNEPRO2_BLE_PROFILE_AP2D_213) {
+    if (!ap2_ble_profile_supported(profile)) {
         return;
     }
     if (profile == ble_profile) {
@@ -510,12 +511,16 @@ static int8_t ap2_ble_read_saved_slot(void) {
     int8_t                 slot;
     annepro2_ble_profile_t profile;
 
-    if (annepro2_ble_decode_config(config, &profile, &slot)) {
+    if (annepro2_ble_decode_config(config, &profile, &slot) && ap2_ble_profile_supported(profile)) {
         return slot;
     }
 
+#ifdef ANNEPRO2_BLE_FIXED_PROFILE
+    return -1;
+#else
     /* Migrate the legacy QMK encoding: zero disables, 1..4 select slots 0..3. */
     return config >= 1 && config <= 4 ? (int8_t)config - 1 : -1;
+#endif
 }
 
 static void ap2_ble_save_slot(int8_t slot) {
@@ -531,6 +536,14 @@ static void ap2_ble_write_config(int8_t slot, annepro2_ble_profile_t profile) {
     if (eeconfig_read_kb() != config) {
         eeconfig_update_kb(config);
     }
+}
+
+static bool ap2_ble_profile_supported(annepro2_ble_profile_t profile) {
+#ifdef ANNEPRO2_BLE_FIXED_PROFILE
+    return profile == ANNEPRO2_BLE_FIXED_PROFILE;
+#else
+    return profile == ANNEPRO2_BLE_PROFILE_C18_205 || profile == ANNEPRO2_BLE_PROFILE_AP2D_213;
+#endif
 }
 
 static uint8_t ap2_ble_leds(void) {

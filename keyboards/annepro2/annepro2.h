@@ -18,7 +18,9 @@
 #pragma once
 #include "quantum.h"
 #include <stdint.h>
-#include "ap2_led.h"
+#ifdef ANNEPRO2_LED_MCU_ENABLE
+#    include "ap2_led.h"
+#endif
 
 enum AP2KeyCodes {
     KC_AP2_BT1 = QK_KB_0,

@@ -1,72 +1,66 @@
 {
     "manufacturer": "Obins",
-    "url": "https://openannepro.github.io/",
     "maintainer": "bwisn",
-    "usb": {
-        "vid": "0xAC20",
-        "device_version": "13.3.7"
-    },
     "build": {
         "lto": true
     },
     "eeprom": {
         "driver": "wear_leveling",
         "wear_leveling": {
-            "driver": "spi_flash",
-            "backing_size": 2048
+            "backing_size": 2048,
+            "driver": "spi_flash"
         }
     },
     "features": {
         "bootmagic": true,
-        "mousekey": true,
         "extrakey": true,
-        "rgb_matrix": true
+        "mousekey": true
     },
     "rgb_matrix": {
-        "animations":{
-           "alphas_mods": true,
-           "gradient_up_down": true,
-           "gradient_left_right": true,
-           "breathing": true,
-           "band_sat": true,
-           "band_val": true,
-           "band_pinwheel_sat": true,
-           "band_pinwheel_val": true,
-           "band_spiral_sat": true,
-           "band_spiral_val": true,
-           "cycle_all": true,
-           "cycle_left_right": true,
-           "cycle_up_down": true,
-           "rainbow_moving_chevron": true,
-           "cycle_out_in": true,
-           "cycle_out_in_dual": true,
-           "cycle_pinwheel": true,
-           "cycle_spiral": true,
-           "dual_beacon": true,
-           "rainbow_beacon": true,
-           "rainbow_pinwheels": true,
-           "raindrops": true,
-           "jellybean_raindrops": true,
-           "hue_breathing": true,
-           "hue_pendulum": true,
-           "hue_wave": true,
-           "pixel_fractal": true,
-           "pixel_flow": true,
-           "pixel_rain": true,
-           "typing_heatmap": true,
-           "digital_rain": true,
-           "solid_reactive_simple": true,
-           "solid_reactive": true,
-           "solid_reactive_wide": true,
-           "solid_reactive_multiwide": true,
-           "solid_reactive_cross": true,
-           "solid_reactive_multicross": true,
-           "solid_reactive_nexus": true,
-           "solid_reactive_multinexus": true,
-           "splash": true,
-           "multisplash": true,
-           "solid_splash": true,
-           "solid_multisplash": true
+        "animations": {
+            "alphas_mods": true,
+            "band_pinwheel_sat": true,
+            "band_pinwheel_val": true,
+            "band_sat": true,
+            "band_spiral_sat": true,
+            "band_spiral_val": true,
+            "band_val": true,
+            "breathing": true,
+            "cycle_all": true,
+            "cycle_left_right": true,
+            "cycle_out_in": true,
+            "cycle_out_in_dual": true,
+            "cycle_pinwheel": true,
+            "cycle_spiral": true,
+            "cycle_up_down": true,
+            "digital_rain": true,
+            "dual_beacon": true,
+            "gradient_left_right": true,
+            "gradient_up_down": true,
+            "hue_breathing": true,
+            "hue_pendulum": true,
+            "hue_wave": true,
+            "jellybean_raindrops": true,
+            "multisplash": true,
+            "pixel_flow": true,
+            "pixel_fractal": true,
+            "pixel_rain": true,
+            "rainbow_beacon": true,
+            "rainbow_moving_chevron": true,
+            "rainbow_pinwheels": true,
+            "raindrops": true,
+            "solid_multisplash": true,
+            "solid_reactive": true,
+            "solid_reactive_cross": true,
+            "solid_reactive_multicross": true,
+            "solid_reactive_multinexus": true,
+            "solid_reactive_multiwide": true,
+            "solid_reactive_nexus": true,
+            "solid_reactive_simple": true,
+            "solid_reactive_wide": true,
+            "solid_splash": true,
+            "splash": true,
+            "typing_heatmap": true
         },
         "driver": "custom",
         "layout": [
@@ -134,6 +128,11 @@
         ],
         "led_flush_limit": 40
     },
+    "url": "https://openannepro.github.io/",
+    "usb": {
+        "device_version": "13.3.7",
+        "vid": "0xAC20"
+    },
     "community_layouts": ["60_ansi", "60_iso"],
     "layouts": {
         "LAYOUT_60_ansi": {
@@ -152,7 +151,6 @@
                 {"matrix": [0, 11], "x": 11, "y": 0},
                 {"matrix": [0, 12], "x": 12, "y": 0},
                 {"matrix": [0, 13], "x": 13, "y": 0, "w": 2},
-
                 {"matrix": [1, 0], "x": 0, "y": 1, "w": 1.5},
                 {"matrix": [1, 1], "x": 1.5, "y": 1},
                 {"matrix": [1, 2], "x": 2.5, "y": 1},
@@ -167,7 +165,6 @@
                 {"matrix": [1, 11], "x": 11.5, "y": 1},
                 {"matrix": [1, 12], "x": 12.5, "y": 1},
                 {"matrix": [1, 13], "x": 13.5, "y": 1, "w": 1.5},
-
                 {"matrix": [2, 0], "x": 0, "y": 2, "w": 1.75},
                 {"matrix": [2, 1], "x": 1.75, "y": 2},
                 {"matrix": [2, 2], "x": 2.75, "y": 2},
@@ -181,7 +178,6 @@
                 {"matrix": [2, 10], "x": 10.75, "y": 2},
                 {"matrix": [2, 11], "x": 11.75, "y": 2},
                 {"matrix": [2, 12], "x": 12.75, "y": 2, "w": 2.25},
-
                 {"matrix": [3, 0], "x": 0, "y": 3, "w": 2.25},
                 {"matrix": [3, 2], "x": 2.25, "y": 3},
                 {"matrix": [3, 3], "x": 3.25, "y": 3},
@@ -194,7 +190,6 @@
                 {"matrix": [3, 10], "x": 10.25, "y": 3},
                 {"matrix": [3, 11], "x": 11.25, "y": 3},
                 {"matrix": [3, 12], "x": 12.25, "y": 3, "w": 2.75},
-
                 {"matrix": [4, 0], "x": 0, "y": 4, "w": 1.25},
                 {"matrix": [4, 2], "x": 1.25, "y": 4, "w": 1.25},
                 {"matrix": [4, 3], "x": 2.5, "y": 4, "w": 1.25},
@@ -221,7 +216,6 @@
                 {"matrix": [0, 11], "x": 11, "y": 0},
                 {"matrix": [0, 12], "x": 12, "y": 0},
                 {"matrix": [0, 13], "x": 13, "y": 0, "w": 2},
-
                 {"matrix": [1, 0], "x": 0, "y": 1, "w": 1.5},
                 {"matrix": [1, 1], "x": 1.5, "y": 1},
                 {"matrix": [1, 2], "x": 2.5, "y": 1},
@@ -236,7 +230,6 @@
                 {"matrix": [1, 11], "x": 11.5, "y": 1},
                 {"matrix": [1, 12], "x": 12.5, "y": 1},
                 {"matrix": [2, 0], "x": 13.75, "y": 1, "w": 1.25, "h": 2},
-
                 {"matrix": [2, 1], "x": 0, "y": 2, "w": 1.75},
                 {"matrix": [2, 2], "x": 1.75, "y": 2},
                 {"matrix": [2, 3], "x": 2.75, "y": 2},
@@ -250,7 +243,6 @@
                 {"matrix": [2, 11], "x": 10.75, "y": 2},
                 {"matrix": [2, 12], "x": 11.75, "y": 2},
                 {"matrix": [1, 13], "x": 12.75, "y": 2},
-
                 {"matrix": [3, 0], "x": 0, "y": 3, "w": 1.25},
                 {"matrix": [3, 1], "x": 1.25, "y": 3},
                 {"matrix": [3, 2], "x": 2.25, "y": 3},
@@ -264,7 +256,6 @@
                 {"matrix": [3, 10], "x": 10.25, "y": 3},
                 {"matrix": [3, 11], "x": 11.25, "y": 3},
                 {"matrix": [3, 12], "x": 12.25, "y": 3, "w": 2.75},
-
                 {"matrix": [4, 0], "x": 0, "y": 4, "w": 1.25},
                 {"matrix": [4, 2], "x": 1.25, "y": 4, "w": 1.25},
                 {"matrix": [4, 3], "x": 2.5, "y": 4, "w": 1.25},
