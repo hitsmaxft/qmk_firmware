@@ -226,6 +226,22 @@ void annepro2_ble_set_profile(annepro2_ble_profile_t profile) {
     AP2_BLE_LOG("profile=%u", (unsigned)ble_profile);
 }
 
+#ifdef ANNEPRO2_VENDOR_HID_ENABLE
+bool annepro2_ble_send_raw_hid_usb(uint8_t *data, uint8_t length) {
+    host_driver_t *driver = host_get_driver();
+
+    if (driver == &ap2_ble_driver) {
+        driver = last_host_driver;
+    }
+    if (driver == NULL || driver->send_raw_hid == NULL) {
+        return false;
+    }
+
+    driver->send_raw_hid(data, length);
+    return true;
+}
+#endif
+
 void annepro2_ble_task(void) {
     const uint32_t now = timer_read32();
 #if defined(CONSOLE_ENABLE) && defined(ANNEPRO2_BLE_DEBUG)

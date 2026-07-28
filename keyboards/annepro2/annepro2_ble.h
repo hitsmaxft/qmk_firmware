@@ -38,6 +38,9 @@ void                   annepro2_ble_unpair(void);
 void                   annepro2_ble_task(void);
 annepro2_ble_profile_t annepro2_ble_get_profile(void);
 void                   annepro2_ble_set_profile(annepro2_ble_profile_t profile);
+#ifdef ANNEPRO2_VENDOR_HID_ENABLE
+bool annepro2_ble_send_raw_hid_usb(uint8_t *data, uint8_t length);
+#endif
 
 /*
  * Optional keymap hook for asynchronous BLE status indication.

@@ -194,7 +194,9 @@ void raw_hid_receive(uint8_t *data, uint8_t length) {
         return;
     }
 
-    raw_hid_send(response, sizeof(response));
+    if (!annepro2_ble_send_raw_hid_usb(response, sizeof(response))) {
+        return;
+    }
     if (result == ANNEPRO2_VENDOR_HID_REPLY_ENTER_IAP && !iap_pending) {
         iap_pending      = true;
         iap_request_time = timer_read32();
