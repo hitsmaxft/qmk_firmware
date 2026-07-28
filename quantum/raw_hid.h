@@ -15,16 +15,16 @@
 /**
  * \brief Callback, invoked when a raw HID report has been received from the host.
  *
- * \param data A pointer to the received data. Always 32 bytes in length.
- * \param length The length of the buffer. Always 32.
+ * \param data A pointer to the received data. Always RAW_EPSIZE bytes in length.
+ * \param length The length of the buffer. Always RAW_EPSIZE.
  */
 void raw_hid_receive(uint8_t *data, uint8_t length);
 
 /**
  * \brief Send an HID report.
  *
- * \param data A pointer to the data to send. Must always be 32 bytes in length.
- * \param length The length of the buffer. Must always be 32.
+ * \param data A pointer to the data to send. Must always be RAW_EPSIZE bytes in length.
+ * \param length The length of the buffer. Must always be RAW_EPSIZE.
  */
 void raw_hid_send(uint8_t *data, uint8_t length);
 

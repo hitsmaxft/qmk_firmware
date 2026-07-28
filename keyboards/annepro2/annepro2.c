@@ -19,6 +19,12 @@
 #include "annepro2_ble.h"
 #include "spi_master.h"
 
+#ifdef ANNEPRO2_VENDOR_HID_ENABLE
+#    include "annepro2_vendor_hid.h"
+#    include "raw_hid.h"
+#    include "timer.h"
+#endif
+
 #ifdef ANNEPRO2_LED_MCU_ENABLE
 #    include "ap2_led.h"
 #    include "protocol.h"
@@ -29,6 +35,20 @@
 #endif
 
 #define IAP_MAGIC_VALUE 0x0000fab2
+
+#ifdef ANNEPRO2_VENDOR_HID_ENABLE
+#    if RAW_EPSIZE != ANNEPRO2_VENDOR_HID_REPORT_SIZE
+#        error Anne Pro 2 Vendor HID requires 64-byte Raw HID reports
+#    endif
+#    if !defined(ANNEPRO2_KEY_FW_VERSION_MAJOR) || !defined(ANNEPRO2_KEY_FW_VERSION_MINOR) || !defined(ANNEPRO2_LED_FW_VERSION_MAJOR) || !defined(ANNEPRO2_LED_FW_VERSION_MINOR)
+#        error Anne Pro 2 Vendor HID firmware versions are not configured
+#    endif
+
+#    define ANNEPRO2_IAP_REPLY_DELAY_MS 20
+
+static bool     iap_pending;
+static uint32_t iap_request_time;
+#endif
 
 #ifdef ANNEPRO2_LED_MCU_ENABLE
 static const SerialConfig led_uart_init_config = {
@@ -134,6 +154,14 @@ void keyboard_post_init_kb(void) {
 }
 
 void matrix_scan_kb(void) {
+#ifdef ANNEPRO2_VENDOR_HID_ENABLE
+    if (iap_pending && timer_elapsed32(iap_request_time) >= ANNEPRO2_IAP_REPLY_DELAY_MS) {
+        iap_pending = false;
+        bootloader_jump();
+        return;
+    }
+#endif
+
     // BLE status is asynchronous; drain it without blocking matrix scanning.
     annepro2_ble_drain_rx();
     annepro2_ble_task();
@@ -148,6 +176,31 @@ void matrix_scan_kb(void) {
 
     matrix_scan_user();
 }
+
+#ifdef ANNEPRO2_VENDOR_HID_ENABLE
+void raw_hid_receive(uint8_t *data, uint8_t length) {
+    annepro2_vendor_hid_versions_t versions = {
+        .key_major = ANNEPRO2_KEY_FW_VERSION_MAJOR,
+        .key_minor = ANNEPRO2_KEY_FW_VERSION_MINOR,
+        .led_major = ANNEPRO2_LED_FW_VERSION_MAJOR,
+        .led_minor = ANNEPRO2_LED_FW_VERSION_MINOR,
+        .ble_major = 2,
+        .ble_minor = annepro2_ble_get_profile() == ANNEPRO2_BLE_PROFILE_AP2D_213 ? 13 : 5,
+    };
+    uint8_t response[ANNEPRO2_VENDOR_HID_REPORT_SIZE];
+
+    const annepro2_vendor_hid_result_t result = annepro2_vendor_hid_handle(data, length, &versions, response);
+    if (result == ANNEPRO2_VENDOR_HID_UNHANDLED) {
+        return;
+    }
+
+    raw_hid_send(response, sizeof(response));
+    if (result == ANNEPRO2_VENDOR_HID_REPLY_ENTER_IAP && !iap_pending) {
+        iap_pending      = true;
+        iap_request_time = timer_read32();
+    }
+}
+#endif
 
 bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
     if (keycode >= KC_AP2_BT1 && keycode <= KC_AP2_BT4) {

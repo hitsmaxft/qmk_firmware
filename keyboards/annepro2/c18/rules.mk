@@ -14,12 +14,15 @@ BOOTLOADER = custom
 PROGRAM_CMD = annepro2_tools --boot $(BUILD_DIR)/$(TARGET).bin
 
 # Anne Pro 2
+RAW_ENABLE = yes
+
 SRC = \
 	c18/annepro2_ble.c \
 	annepro2_ble_213_slot.c \
 	annepro2_ble_parser.c \
 	annepro2_ble_profile.c \
 	annepro2_ble_state.c \
+	annepro2_vendor_hid.c \
 	ap2_led.c \
 	protocol.c \
 	rgb_driver.c \

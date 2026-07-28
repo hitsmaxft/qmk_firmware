@@ -21,6 +21,17 @@
 
 #define ANNEPRO2_LED_MCU_ENABLE
 
+/*
+ * Match the stock C18 Vendor HID report size and expose the next KEY
+ * compatibility revision alongside the installed LED and selected BLE profile.
+ */
+#define ANNEPRO2_VENDOR_HID_ENABLE
+#define RAW_EPSIZE 64
+#define ANNEPRO2_KEY_FW_VERSION_MAJOR 2
+#define ANNEPRO2_KEY_FW_VERSION_MINOR 37
+#define ANNEPRO2_LED_FW_VERSION_MAJOR 2
+#define ANNEPRO2_LED_FW_VERSION_MINOR 33
+
 #define LINE_UART_TX B0
 #define LINE_UART_RX B1
 
