@@ -264,6 +264,13 @@ ap2_ble_actions_t ap2_ble_state_unpair(ap2_ble_state_t *state) {
     return AP2_BLE_ACTION_SEND_UNPAIR | ap2_ble_state_disconnect(state);
 }
 
+ap2_ble_actions_t ap2_ble_state_toggle_output(const ap2_ble_state_t *state, bool output_is_ble) {
+    if (state->state != AP2_BLE_STATE_ACTIVE) {
+        return AP2_BLE_ACTION_NONE;
+    }
+    return output_is_ble ? AP2_BLE_ACTION_ROUTE_USB : AP2_BLE_ACTION_ROUTE_BLE;
+}
+
 bool ap2_ble_state_route_requested(const ap2_ble_state_t *state) {
     return state->state != AP2_BLE_STATE_USB;
 }

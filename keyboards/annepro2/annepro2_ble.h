@@ -35,6 +35,7 @@ void                   annepro2_ble_slot_press(uint8_t port);
 void                   annepro2_ble_slot_release(uint8_t port);
 void                   annepro2_ble_disconnect(void);
 void                   annepro2_ble_unpair(void);
+bool                   annepro2_ble_toggle_output(void);
 void                   annepro2_ble_task(void);
 annepro2_ble_profile_t annepro2_ble_get_profile(void);
 void                   annepro2_ble_set_profile(annepro2_ble_profile_t profile);

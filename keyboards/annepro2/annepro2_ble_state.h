@@ -92,6 +92,7 @@ ap2_ble_actions_t ap2_ble_state_command_ack(ap2_ble_state_t *state, uint8_t comm
 ap2_ble_actions_t ap2_ble_state_handshake(ap2_ble_state_t *state);
 ap2_ble_actions_t ap2_ble_state_disconnect(ap2_ble_state_t *state);
 ap2_ble_actions_t ap2_ble_state_unpair(ap2_ble_state_t *state);
+ap2_ble_actions_t ap2_ble_state_toggle_output(const ap2_ble_state_t *state, bool output_is_ble);
 
 bool ap2_ble_state_route_requested(const ap2_ble_state_t *state);
 bool ap2_ble_state_operation_pending(const ap2_ble_state_t *state);

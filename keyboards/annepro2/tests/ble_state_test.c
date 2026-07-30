@@ -224,6 +224,26 @@ static void test_disconnect_and_unpair_clear_transient_state(void) {
     assert(state.state == AP2_BLE_STATE_USB);
 }
 
+static void test_output_toggle_preserves_active_connection(void) {
+    ap2_ble_state_t state;
+    ap2_ble_state_reset(&state);
+    assert(ap2_ble_state_toggle_output(&state, false) == AP2_BLE_ACTION_NONE);
+
+    ap2_ble_state_connect(&state, 2, 0);
+    ap2_ble_state_command_ack(&state, 0x04, 10);
+    ap2_ble_state_handshake(&state);
+    assert(state.state == AP2_BLE_STATE_ACTIVE);
+    assert(state.selected_slot == 2);
+
+    assert(ap2_ble_state_toggle_output(&state, true) == AP2_BLE_ACTION_ROUTE_USB);
+    assert(state.state == AP2_BLE_STATE_ACTIVE);
+    assert(state.selected_slot == 2);
+
+    assert(ap2_ble_state_toggle_output(&state, false) == AP2_BLE_ACTION_ROUTE_BLE);
+    assert(state.state == AP2_BLE_STATE_ACTIVE);
+    assert(state.selected_slot == 2);
+}
+
 static void test_timer_wraparound(void) {
     ap2_ble_state_t state;
     ap2_ble_state_reset(&state);
@@ -241,6 +261,7 @@ int main(void) {
     test_latest_slot_intent_wins();
     test_handshake_timeout_recovery_is_bounded();
     test_disconnect_and_unpair_clear_transient_state();
+    test_output_toggle_preserves_active_connection();
     test_timer_wraparound();
     return 0;
 }

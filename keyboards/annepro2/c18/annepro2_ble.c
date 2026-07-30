@@ -203,6 +203,18 @@ void annepro2_ble_unpair(void) {
     ap2_ble_reset_rx_parser();
 }
 
+bool annepro2_ble_toggle_output(void) {
+    const bool              output_is_ble = host_get_driver() == &ap2_ble_driver;
+    const ap2_ble_actions_t actions       = ap2_ble_state_toggle_output(&ble_state, output_is_ble);
+    if (actions == AP2_BLE_ACTION_NONE) {
+        return false;
+    }
+
+    ap2_ble_execute_actions(actions);
+    AP2_BLE_LOG("output %s", output_is_ble ? "usb" : "ble");
+    return true;
+}
+
 annepro2_ble_profile_t annepro2_ble_get_profile(void) {
     return ble_profile;
 }
