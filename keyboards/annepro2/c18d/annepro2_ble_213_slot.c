@@ -13,8 +13,8 @@
 
 /*
  * AP2D KEY 3.08 queries and selects the BLE module's internal slot before
- * issuing a pairing or connect command. These frames are BLE 2.13-only; the
- * C18 BLE 2.05 profile must never send them.
+ * issuing a pairing or connect command. These frames are BLE 2.13-only and
+ * are not linked into the C18 target.
  */
 static const uint8_t query_slot_frame[] = {
     0x7b, 0x12, 0x53, 0x00, 0x02, 0x00, 0x00, 0x7d, 0xc0, 0x17,
@@ -35,10 +35,6 @@ static uint32_t elapsed(uint32_t now, uint32_t then) {
 void ap2_ble_213_slot_reset(ap2_ble_213_slot_state_t *state) {
     memset(state, 0, sizeof(*state));
     state->phase = AP2_BLE_213_SLOT_IDLE;
-}
-
-bool ap2_ble_213_slot_should_prepare(annepro2_ble_profile_t profile, uint8_t command_retries) {
-    return profile == ANNEPRO2_BLE_PROFILE_AP2D_213 && command_retries == 0;
 }
 
 ap2_ble_213_slot_actions_t ap2_ble_213_slot_begin(ap2_ble_213_slot_state_t *state, uint8_t target_slot, uint16_t deferred_actions, uint32_t now) {
@@ -107,10 +103,6 @@ ap2_ble_213_slot_actions_t ap2_ble_213_slot_task(ap2_ble_213_slot_state_t *state
     return AP2_BLE_213_SLOT_ACTION_NONE;
 }
 
-bool ap2_ble_213_slot_active(const ap2_ble_213_slot_state_t *state) {
-    return state->phase != AP2_BLE_213_SLOT_IDLE;
-}
-
 uint8_t ap2_ble_213_slot_encode_query(uint8_t out[AP2_BLE_213_SLOT_FRAME_MAX_SIZE]) {
     memcpy(out, query_slot_frame, sizeof(query_slot_frame));
     return sizeof(query_slot_frame);
@@ -129,7 +121,7 @@ uint8_t ap2_ble_213_slot_encode_prepare(uint8_t value, uint8_t out[AP2_BLE_213_S
 }
 
 bool ap2_ble_213_slot_decode_response(const uint8_t *frame, size_t size, uint8_t *slot) {
-    if (frame == NULL || slot == NULL || size != AP2_BLE_213_SLOT_FRAME_MAX_SIZE || frame[0] != 0x7b || frame[1] != 0x12 || frame[2] != 0x35 || frame[4] != 0x03 || frame[5] != 0x00 || frame[7] != 0x7d || frame[8] != 0xc0 || frame[9] != 0x17 || frame[10] > 3) {
+    if (frame == NULL || slot == NULL || size != AP2_BLE_213_SLOT_FRAME_MAX_SIZE || frame[0] != 0x7b || frame[1] != 0x12 || frame[2] != 0x35 || frame[3] != 0x00 || frame[4] != 0x03 || frame[5] != 0x00 || frame[6] != 0x00 || frame[7] != 0x7d || frame[8] != 0xc0 || frame[9] != 0x17 || frame[10] > 3) {
         return false;
     }
 

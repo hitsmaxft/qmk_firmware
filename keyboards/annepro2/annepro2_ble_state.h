@@ -46,6 +46,11 @@ typedef enum {
 } ap2_ble_state_id_t;
 
 typedef enum {
+    AP2_BLE_OUTPUT_USB,
+    AP2_BLE_OUTPUT_BLE,
+} ap2_ble_output_t;
+
+typedef enum {
     AP2_BLE_ACTION_NONE            = 0,
     AP2_BLE_ACTION_ROUTE_USB       = 1 << 0,
     AP2_BLE_ACTION_ROUTE_BLE       = 1 << 1,
@@ -63,6 +68,7 @@ typedef uint16_t ap2_ble_actions_t;
 
 typedef struct {
     ap2_ble_state_id_t state;
+    ap2_ble_output_t   output;
     int8_t             startup_slot;
     int8_t             held_slot;
     int8_t             pending_slot;
@@ -71,6 +77,8 @@ typedef struct {
     bool               pending_broadcast;
     bool               command_slot_state_pending;
     bool               command_slot_broadcast;
+    bool               command_is_broadcast;
+    bool               command_armed;
     bool               handshake_timeout_enabled;
     uint8_t            command_retries;
     uint8_t            handshake_recoveries;
@@ -88,11 +96,11 @@ ap2_ble_actions_t ap2_ble_state_broadcast(ap2_ble_state_t *state, uint8_t slot, 
 ap2_ble_actions_t ap2_ble_state_slot_press(ap2_ble_state_t *state, uint8_t slot, uint32_t now);
 ap2_ble_actions_t ap2_ble_state_slot_release(ap2_ble_state_t *state, uint8_t slot, uint32_t now);
 ap2_ble_actions_t ap2_ble_state_task(ap2_ble_state_t *state, uint32_t now);
-ap2_ble_actions_t ap2_ble_state_command_ack(ap2_ble_state_t *state, uint8_t command, uint32_t now);
+void              ap2_ble_state_command_dispatched(ap2_ble_state_t *state, uint32_t now);
+ap2_ble_actions_t ap2_ble_state_command_ack(ap2_ble_state_t *state, uint8_t command, uint8_t value, uint32_t now);
 ap2_ble_actions_t ap2_ble_state_handshake(ap2_ble_state_t *state);
 ap2_ble_actions_t ap2_ble_state_disconnect(ap2_ble_state_t *state);
 ap2_ble_actions_t ap2_ble_state_unpair(ap2_ble_state_t *state);
-ap2_ble_actions_t ap2_ble_state_toggle_output(const ap2_ble_state_t *state, bool output_is_ble);
+ap2_ble_actions_t ap2_ble_state_toggle_output(ap2_ble_state_t *state);
 
-bool ap2_ble_state_route_requested(const ap2_ble_state_t *state);
 bool ap2_ble_state_operation_pending(const ap2_ble_state_t *state);

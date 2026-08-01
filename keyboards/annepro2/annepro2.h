@@ -29,8 +29,6 @@ enum AP2KeyCodes {
     KC_AP2_BT4,
     KC_AP2_BT_UNPAIR,
     KC_AP2_USB,
-    KC_AP2_BLE205,
-    KC_AP2_BLE213,
     KC_AP_LED_ON,
     KC_AP_LED_OFF,
     KC_AP_LED_TOG,

@@ -43,6 +43,9 @@
 #    if !defined(ANNEPRO2_KEY_FW_VERSION_MAJOR) || !defined(ANNEPRO2_KEY_FW_VERSION_MINOR) || !defined(ANNEPRO2_LED_FW_VERSION_MAJOR) || !defined(ANNEPRO2_LED_FW_VERSION_MINOR)
 #        error Anne Pro 2 Vendor HID firmware versions are not configured
 #    endif
+#    if !defined(ANNEPRO2_BLE_FW_VERSION_MINOR)
+#        error Anne Pro 2 Vendor HID BLE firmware version is not configured
+#    endif
 
 #    define ANNEPRO2_IAP_REPLY_DELAY_MS 20
 
@@ -68,12 +71,16 @@ static const SerialConfig ble_uart_config = {
     .speed = 115200,
 };
 
+#ifndef ANNEPRO2_BLE_RX_SCAN_BUDGET
+#    define ANNEPRO2_BLE_RX_SCAN_BUDGET 64
+#endif
+
 #ifdef ANNEPRO2_LED_MCU_ENABLE
 static uint8_t led_mcu_wakeup[11] = {0x7b, 0x10, 0x43, 0x10, 0x03, 0x00, 0x00, 0x7d, 0x02, 0x01, 0x02};
 #endif
 
 static void annepro2_ble_drain_rx(void) {
-    while (!sdGetWouldBlock(&SD1)) {
+    for (uint8_t count = 0; count < ANNEPRO2_BLE_RX_SCAN_BUDGET && !sdGetWouldBlock(&SD1); count++) {
         annepro2_ble_rx_byte((uint8_t)sdGet(&SD1));
     }
 }
@@ -138,11 +145,12 @@ void keyboard_post_init_kb(void) {
     sdStart(&SD1, &ble_uart_config);
     annepro2_ble_startup();
 
-    // Give the send uart thread some time to
-    // send out the queue before we read back
+#ifndef ANNEPRO2_BLE_ASYNC_STARTUP
+    /* Preserve the legacy C15 startup behavior. */
     wait_ms(100);
+#endif
 
-    // Parse the wakeup response instead of discarding possible status events.
+    /* C18 continues the asynchronous handshake from matrix_scan_kb(). */
     annepro2_ble_drain_rx();
 
 #if defined(ANNEPRO2_LED_MCU_ENABLE) && defined(RGB_MATRIX_ENABLE)
@@ -185,7 +193,7 @@ void raw_hid_receive(uint8_t *data, uint8_t length) {
         .led_major = ANNEPRO2_LED_FW_VERSION_MAJOR,
         .led_minor = ANNEPRO2_LED_FW_VERSION_MINOR,
         .ble_major = 2,
-        .ble_minor = annepro2_ble_get_profile() == ANNEPRO2_BLE_PROFILE_AP2D_213 ? 13 : 5,
+        .ble_minor = ANNEPRO2_BLE_FW_VERSION_MINOR,
     };
     uint8_t response[ANNEPRO2_VENDOR_HID_REPORT_SIZE];
 
@@ -246,14 +254,6 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
 
             case KC_AP2_BT_UNPAIR:
                 annepro2_ble_unpair();
-                return false;
-
-            case KC_AP2_BLE205:
-                annepro2_ble_set_profile(ANNEPRO2_BLE_PROFILE_C18_205);
-                return false;
-
-            case KC_AP2_BLE213:
-                annepro2_ble_set_profile(ANNEPRO2_BLE_PROFILE_AP2D_213);
                 return false;
 
 #ifdef ANNEPRO2_LED_MCU_ENABLE

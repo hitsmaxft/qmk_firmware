@@ -2,17 +2,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "../annepro2_ble_213_slot.h"
+#include "../c18d/annepro2_ble_213_slot.h"
 
 static bool has(ap2_ble_213_slot_actions_t actions, ap2_ble_213_slot_action_t action) {
     return (actions & action) != 0;
-}
-
-static void test_profile_gate_keeps_c18_205_unchanged(void) {
-    assert(!ap2_ble_213_slot_should_prepare(ANNEPRO2_BLE_PROFILE_C18_205, 0));
-    assert(!ap2_ble_213_slot_should_prepare(ANNEPRO2_BLE_PROFILE_C18_205, 1));
-    assert(ap2_ble_213_slot_should_prepare(ANNEPRO2_BLE_PROFILE_AP2D_213, 0));
-    assert(!ap2_ble_213_slot_should_prepare(ANNEPRO2_BLE_PROFILE_AP2D_213, 1));
 }
 
 static void assert_bytes(const uint8_t *actual, const uint8_t *expected, uint8_t size) {
@@ -52,6 +45,13 @@ static void test_current_slot_response(void) {
     frame[10] = 0;
     frame[8]  = 0x40;
     assert(!ap2_ble_213_slot_decode_response(frame, sizeof(frame), &slot));
+    frame[8] = 0xc0;
+    frame[3] = 1;
+    assert(!ap2_ble_213_slot_decode_response(frame, sizeof(frame), &slot));
+    frame[3] = 0;
+    frame[6] = 1;
+    assert(!ap2_ble_213_slot_decode_response(frame, sizeof(frame), &slot));
+    frame[6] = 0;
     assert(!ap2_ble_213_slot_decode_response(frame, sizeof(frame) - 1, &slot));
     assert(!ap2_ble_213_slot_decode_response(NULL, sizeof(frame), &slot));
     assert(!ap2_ble_213_slot_decode_response(frame, sizeof(frame), NULL));
@@ -69,7 +69,7 @@ static void test_same_slot_dispatches_after_query(void) {
     const ap2_ble_213_slot_actions_t actions = ap2_ble_213_slot_task(&state, 105, &deferred);
     assert(actions == AP2_BLE_213_SLOT_ACTION_DISPATCH);
     assert(deferred == 0x123);
-    assert(!ap2_ble_213_slot_active(&state));
+    assert(state.phase == AP2_BLE_213_SLOT_IDLE);
 }
 
 static void test_changed_slot_uses_full_prepare_sequence(void) {
@@ -93,7 +93,7 @@ static void test_changed_slot_uses_full_prepare_sequence(void) {
     actions = ap2_ble_213_slot_task(&state, 1045, &deferred);
     assert(actions == AP2_BLE_213_SLOT_ACTION_DISPATCH);
     assert(deferred == 0x321);
-    assert(!ap2_ble_213_slot_active(&state));
+    assert(state.phase == AP2_BLE_213_SLOT_IDLE);
 }
 
 static void test_missing_or_invalid_query_response_prepares_slot(void) {
@@ -131,7 +131,6 @@ static void test_timer_wraparound(void) {
 }
 
 int main(void) {
-    test_profile_gate_keeps_c18_205_unchanged();
     test_ap2d_308_wire_frames();
     test_current_slot_response();
     test_same_slot_dispatches_after_query();

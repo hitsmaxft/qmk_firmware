@@ -13,8 +13,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "annepro2_ble_profile.h"
-
 #ifndef ANNEPRO2_BLE_213_SLOT_QUERY_DELAY
 #    define ANNEPRO2_BLE_213_SLOT_QUERY_DELAY 5
 #endif
@@ -53,11 +51,9 @@ typedef struct {
 } ap2_ble_213_slot_state_t;
 
 void                       ap2_ble_213_slot_reset(ap2_ble_213_slot_state_t *state);
-bool                       ap2_ble_213_slot_should_prepare(annepro2_ble_profile_t profile, uint8_t command_retries);
 ap2_ble_213_slot_actions_t ap2_ble_213_slot_begin(ap2_ble_213_slot_state_t *state, uint8_t target_slot, uint16_t deferred_actions, uint32_t now);
 void                       ap2_ble_213_slot_response(ap2_ble_213_slot_state_t *state, uint8_t current_slot);
 ap2_ble_213_slot_actions_t ap2_ble_213_slot_task(ap2_ble_213_slot_state_t *state, uint32_t now, uint16_t *deferred_actions);
-bool                       ap2_ble_213_slot_active(const ap2_ble_213_slot_state_t *state);
 uint8_t                    ap2_ble_213_slot_encode_query(uint8_t out[AP2_BLE_213_SLOT_FRAME_MAX_SIZE]);
 uint8_t                    ap2_ble_213_slot_encode_select(uint8_t slot, uint8_t out[AP2_BLE_213_SLOT_FRAME_MAX_SIZE]);
 uint8_t                    ap2_ble_213_slot_encode_prepare(uint8_t value, uint8_t out[AP2_BLE_213_SLOT_FRAME_MAX_SIZE]);

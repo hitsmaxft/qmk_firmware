@@ -17,11 +17,11 @@ PROGRAM_CMD = annepro2_tools --boot $(BUILD_DIR)/$(TARGET).bin
 RAW_ENABLE = yes
 
 SRC = \
-	c18/annepro2_ble.c \
-	annepro2_ble_213_slot.c \
+	annepro2_ble_v2.c \
 	annepro2_ble_parser.c \
-	annepro2_ble_profile.c \
+	annepro2_ble_slot_config.c \
 	annepro2_ble_state.c \
+	c18/annepro2_ble_protocol.c \
 	annepro2_vendor_hid.c \
 	ap2_led.c \
 	protocol.c \

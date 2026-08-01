@@ -30,18 +30,16 @@ static void    ap2_ble_keyboard(report_keyboard_t *report);
 static void ap2_ble_swtich_ble_driver(void);
 
 /* -------------------- Static Local Variables ------------------------------ */
-static host_driver_t ap2_ble_driver = {
-    ap2_ble_leds, ap2_ble_keyboard, NULL, ap2_ble_mouse, ap2_ble_extra
-};
+static host_driver_t ap2_ble_driver = {ap2_ble_leds, ap2_ble_keyboard, NULL, ap2_ble_mouse, ap2_ble_extra};
 
 static uint8_t ble_mcu_wakeup[11] = {0x7b, 0x12, 0x53, 0x00, 0x03, 0x00, 0x01, 0x7d, 0x02, 0x01, 0x02};
 
 static uint8_t ble_mcu_start_broadcast[10] = {
-    0x7b, 0x12, 0x53, 0x00, 0x03, 0x00, 0x00, 0x7d, 0x40, 0x01,  // Broadcast ID[0-3]
+    0x7b, 0x12, 0x53, 0x00, 0x03, 0x00, 0x00, 0x7d, 0x40, 0x01, // Broadcast ID[0-3]
 };
 
 static uint8_t ble_mcu_connect[10] = {
-    0x7b, 0x12, 0x53, 0x00, 0x03, 0x00, 0x00, 0x7d, 0x40, 0x04,  // Connect ID [0-3]
+    0x7b, 0x12, 0x53, 0x00, 0x03, 0x00, 0x00, 0x7d, 0x40, 0x04, // Connect ID [0-3]
 };
 
 static uint8_t ble_mcu_send_report[10] = {
@@ -61,13 +59,17 @@ static uint8_t ble_mcu_bootload[11] = {0x7b, 0x10, 0x51, 0x10, 0x03, 0x00, 0x00,
 static host_driver_t *last_host_driver = NULL;
 #ifdef NKRO_ENABLE
 static bool lastNkroStatus = false;
-#endif  // NKRO_ENABLE
+#endif // NKRO_ENABLE
 
 /* -------------------- Public Function Implementation ---------------------- */
 
-void annepro2_ble_bootload(void) { sdWrite(&SD1, ble_mcu_bootload, sizeof(ble_mcu_bootload)); }
+void annepro2_ble_bootload(void) {
+    sdWrite(&SD1, ble_mcu_bootload, sizeof(ble_mcu_bootload));
+}
 
-void annepro2_ble_startup(void) { sdWrite(&SD1, ble_mcu_wakeup, sizeof(ble_mcu_wakeup)); }
+void annepro2_ble_startup(void) {
+    sdWrite(&SD1, ble_mcu_wakeup, sizeof(ble_mcu_wakeup));
+}
 
 void annepro2_ble_broadcast(uint8_t port) {
     if (port > 3) {
@@ -123,12 +125,8 @@ void annepro2_ble_unpair(void) {
 
 void annepro2_ble_task(void) {}
 
-annepro2_ble_profile_t annepro2_ble_get_profile(void) {
-    return ANNEPRO2_BLE_PROFILE_C18_205;
-}
-
-void annepro2_ble_set_profile(annepro2_ble_profile_t profile) {
-    (void)profile;
+bool annepro2_ble_toggle_output(void) {
+    return false;
 }
 
 void annepro2_ble_rx_byte(uint8_t byte) {
@@ -151,7 +149,7 @@ static void ap2_ble_swtich_ble_driver(void) {
 }
 
 static uint8_t ap2_ble_leds(void) {
-    return 0;  // TODO: Figure out how to obtain LED status
+    return 0; // TODO: Figure out how to obtain LED status
 }
 
 static void ap2_ble_mouse(report_mouse_t *report) {}

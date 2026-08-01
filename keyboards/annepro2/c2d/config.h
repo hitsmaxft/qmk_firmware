@@ -20,9 +20,8 @@
  */
 #define ANNEPRO2_IAP_MAGIC_LOCATION 0x20003ffc
 
-/* AP2D hardware only carries the BLE 2.13 module. */
-#define ANNEPRO2_BLE_DEFAULT_PROFILE ANNEPRO2_BLE_PROFILE_AP2D_213
-#define ANNEPRO2_BLE_FIXED_PROFILE ANNEPRO2_BLE_PROFILE_AP2D_213
+/* C2D is permanently paired with its stock BLE 2.13 protocol. */
+#define ANNEPRO2_BLE_EECONFIG_TAG 0x2D
 
 #define PERMISSIVE_HOLD
 

@@ -14,11 +14,11 @@
     limitations under the License.
 */
 
-/* C18-only BLE 2.05/2.13 compatibility implementation. */
+/* Reliable BLE transport shared by fixed-protocol Anne Pro 2 targets. */
 #include "annepro2_ble.h"
-#include "annepro2_ble_213_slot.h"
 #include "annepro2_ble_parser.h"
-#include "annepro2_ble_profile.h"
+#include "annepro2_ble_protocol.h"
+#include "annepro2_ble_slot_config.h"
 #include "annepro2_ble_state.h"
 #include "ch.h"
 #include "eeconfig.h"
@@ -29,6 +29,7 @@
 #include "print.h"
 #include "report.h"
 #include "timer.h"
+#include <string.h>
 #if defined(CONSOLE_ENABLE) && defined(ANNEPRO2_BLE_DEBUG)
 #    include "version.h"
 #endif
@@ -40,6 +41,12 @@
 #    define AP2_BLE_LOG(fmt, ...)
 #endif
 
+_Static_assert(KEYBOARD_REPORT_SIZE == 8, "Anne Pro 2 BLE protocol requires an 8-byte boot keyboard report");
+
+#ifndef ANNEPRO2_BLE_EECONFIG_TAG
+#    error Fixed-protocol Anne Pro 2 targets must define ANNEPRO2_BLE_EECONFIG_TAG
+#endif
+
 /* -------------------- Static Function Prototypes -------------------------- */
 static uint8_t ap2_ble_leds(void);
 static void    ap2_ble_mouse(report_mouse_t *report);
@@ -49,9 +56,10 @@ static void    ap2_ble_keyboard(report_keyboard_t *report);
 static void   ap2_ble_switch_ble_driver(void);
 static void   ap2_ble_execute_actions(ap2_ble_actions_t actions);
 static void   ap2_ble_execute_actions_now(ap2_ble_actions_t actions);
-static void   ap2_ble_execute_213_slot_actions(ap2_ble_213_slot_actions_t actions);
+static void   ap2_ble_send_protocol_step(const ap2_ble_protocol_step_t *step);
 static void   ap2_ble_handle_rx_frame(const uint8_t *frame, uint8_t size);
 static void   ap2_ble_handle_command_ack(uint8_t command, uint8_t value);
+static bool   ap2_ble_decode_caps_lock(const uint8_t *frame, uint8_t size, bool *caps_lock);
 static void   ap2_ble_notify_status(annepro2_ble_status_t status);
 static void   ap2_ble_reset_rx_parser(void);
 static void   ap2_ble_send_broadcast(void);
@@ -59,8 +67,7 @@ static void   ap2_ble_send_connect(void);
 static void   ap2_ble_send_slot_state(void);
 static int8_t ap2_ble_read_saved_slot(void);
 static void   ap2_ble_save_slot(int8_t slot);
-static void   ap2_ble_write_config(int8_t slot, annepro2_ble_profile_t profile);
-static bool   ap2_ble_profile_supported(annepro2_ble_profile_t profile);
+static void   ap2_ble_write_config(int8_t slot);
 #if defined(CONSOLE_ENABLE) && defined(ANNEPRO2_BLE_DEBUG)
 static void ap2_ble_log_build(void);
 static void ap2_ble_log_rx_frame(const uint8_t *frame, uint8_t size);
@@ -70,14 +77,6 @@ static void ap2_ble_log_rx_frame(const uint8_t *frame, uint8_t size);
 static host_driver_t ap2_ble_driver = {ap2_ble_leds, ap2_ble_keyboard, NULL, ap2_ble_mouse, ap2_ble_extra};
 
 static uint8_t ble_mcu_wakeup[11] = {0x7b, 0x12, 0x53, 0x00, 0x03, 0x00, 0x01, 0x7d, 0x02, 0x01, 0x02};
-
-static uint8_t ble_mcu_start_broadcast[10] = {
-    0x7b, 0x12, 0x53, 0x00, 0x03, 0x00, 0x00, 0x7d, 0x40, 0x01, // Broadcast ID[0-3]
-};
-
-static uint8_t ble_mcu_connect[10] = {
-    0x7b, 0x12, 0x53, 0x00, 0x03, 0x00, 0x00, 0x7d, 0x40, 0x04, // Connect ID [0-3]
-};
 
 static uint8_t ble_mcu_send_report[10] = {
     0x7b, 0x12, 0x53, 0x00, 0x0A, 0x00, 0x00, 0x7d, 0x10, 0x04,
@@ -89,11 +88,6 @@ static uint8_t ble_mcu_send_consumer_report[10] = {
 
 static uint8_t ble_mcu_unpair[10] = {
     0x7b, 0x12, 0x53, 0x00, 0x02, 0x00, 0x00, 0x7d, 0x40, 0x05,
-};
-
-/* One-shot slot-key state sent before the official 0x40/0x01 or 0x04 command. */
-static uint8_t ble_mcu_slot_state[10] = {
-    0x7b, 0x12, 0x43, 0x00, 0x04, 0x00, 0x00, 0x7d, 0x20, 0x0b,
 };
 
 /* Reply sent by the official keyboard MCU after a BLE 0x20/0x0c request. */
@@ -108,12 +102,10 @@ static uint8_t ble_mcu_state_sync_response[10] = {
 
 static uint8_t ble_mcu_bootload[11] = {0x7b, 0x10, 0x51, 0x10, 0x03, 0x00, 0x00, 0x7d, 0x02, 0x01, 0x01};
 
-static host_driver_t           *last_host_driver = NULL;
-static ap2_ble_state_t          ble_state;
-static ap2_ble_213_slot_state_t ble_213_slot_state;
-static annepro2_ble_parser_t    ble_rx_parser;
-static annepro2_ble_profile_t   ble_profile = ANNEPRO2_BLE_DEFAULT_PROFILE;
-static led_t                    ble_led_state;
+static host_driver_t        *last_host_driver = NULL;
+static ap2_ble_state_t       ble_state;
+static annepro2_ble_parser_t ble_rx_parser;
+static led_t                 ble_led_state;
 #if defined(CONSOLE_ENABLE) && defined(ANNEPRO2_BLE_DEBUG)
 static uint8_t  ble_debug_keyboard_reports;
 static bool     ble_debug_build_log_pending;
@@ -145,21 +137,14 @@ void annepro2_ble_bootload(void) {
 }
 
 void annepro2_ble_startup(void) {
-    annepro2_ble_profile_t saved_profile;
-    int8_t                 saved_slot;
-    if (annepro2_ble_decode_config(eeconfig_read_kb(), &saved_profile, &saved_slot) && ap2_ble_profile_supported(saved_profile)) {
-        ble_profile = saved_profile;
-    } else {
-        ble_profile = ANNEPRO2_BLE_DEFAULT_PROFILE;
-    }
-    saved_slot = ap2_ble_read_saved_slot();
-    ap2_ble_213_slot_reset(&ble_213_slot_state);
+    const int8_t saved_slot = ap2_ble_read_saved_slot();
+    ap2_ble_protocol_reset();
 #if defined(CONSOLE_ENABLE) && defined(ANNEPRO2_BLE_DEBUG)
     ap2_ble_log_build();
     ble_debug_build_log_pending = true;
     ble_debug_build_log_timer   = timer_read32();
 #endif
-    AP2_BLE_LOG("wake %d profile=%u", saved_slot, (unsigned)ble_profile);
+    AP2_BLE_LOG("wake %d", saved_slot);
     ap2_ble_execute_actions(ap2_ble_state_startup(&ble_state, saved_slot, timer_read32()));
 }
 
@@ -189,7 +174,7 @@ void annepro2_ble_slot_release(uint8_t port) {
 
 void annepro2_ble_disconnect(void) {
     AP2_BLE_LOG("disconnect");
-    ap2_ble_213_slot_reset(&ble_213_slot_state);
+    ap2_ble_protocol_cancel_command();
     ap2_ble_execute_actions(ap2_ble_state_disconnect(&ble_state));
     ap2_ble_notify_status(ANNEPRO2_BLE_STATUS_IDLE);
     ap2_ble_reset_rx_parser();
@@ -197,45 +182,21 @@ void annepro2_ble_disconnect(void) {
 
 void annepro2_ble_unpair(void) {
     AP2_BLE_LOG("tx unpair");
-    ap2_ble_213_slot_reset(&ble_213_slot_state);
+    ap2_ble_protocol_cancel_command();
     ap2_ble_execute_actions(ap2_ble_state_unpair(&ble_state));
     ap2_ble_notify_status(ANNEPRO2_BLE_STATUS_IDLE);
     ap2_ble_reset_rx_parser();
 }
 
 bool annepro2_ble_toggle_output(void) {
-    const bool              output_is_ble = host_get_driver() == &ap2_ble_driver;
-    const ap2_ble_actions_t actions       = ap2_ble_state_toggle_output(&ble_state, output_is_ble);
+    const ap2_ble_actions_t actions = ap2_ble_state_toggle_output(&ble_state);
     if (actions == AP2_BLE_ACTION_NONE) {
         return false;
     }
 
     ap2_ble_execute_actions(actions);
-    AP2_BLE_LOG("output %s", output_is_ble ? "usb" : "ble");
+    AP2_BLE_LOG("output %s", ble_state.output == AP2_BLE_OUTPUT_BLE ? "ble" : "usb");
     return true;
-}
-
-annepro2_ble_profile_t annepro2_ble_get_profile(void) {
-    return ble_profile;
-}
-
-void annepro2_ble_set_profile(annepro2_ble_profile_t profile) {
-    if (!ap2_ble_profile_supported(profile)) {
-        return;
-    }
-    if (profile == ble_profile) {
-        return;
-    }
-
-    /*
-     * A slot number belongs to the BLE module's bond database. Clear the
-     * autoconnect selection when changing module profiles so a stale C18 slot
-     * is never replayed to an AP2D module (or vice versa).
-     */
-    annepro2_ble_disconnect();
-    ble_profile = profile;
-    ap2_ble_write_config(-1, ble_profile);
-    AP2_BLE_LOG("profile=%u", (unsigned)ble_profile);
 }
 
 #ifdef ANNEPRO2_VENDOR_HID_ENABLE
@@ -267,13 +228,10 @@ void annepro2_ble_task(void) {
     }
     ap2_ble_execute_actions(ap2_ble_state_task(&ble_state, now));
 
-    if (ble_profile == ANNEPRO2_BLE_PROFILE_AP2D_213) {
-        uint16_t                         deferred_actions;
-        const ap2_ble_213_slot_actions_t slot_actions = ap2_ble_213_slot_task(&ble_213_slot_state, now, &deferred_actions);
-        ap2_ble_execute_213_slot_actions(slot_actions);
-        if (slot_actions & AP2_BLE_213_SLOT_ACTION_DISPATCH) {
-            ap2_ble_execute_actions_now((ap2_ble_actions_t)deferred_actions);
-        }
+    ap2_ble_protocol_step_t step;
+    if (ap2_ble_protocol_task(now, &step)) {
+        ap2_ble_send_protocol_step(&step);
+        ap2_ble_execute_actions_now(step.dispatch_actions);
     }
 }
 
@@ -302,22 +260,17 @@ void annepro2_ble_rx_byte(uint8_t byte) {
 
 /* ------------------- Static Function Implementation ----------------------- */
 static void ap2_ble_execute_actions(ap2_ble_actions_t actions) {
-    const ap2_ble_actions_t command_actions = actions & (AP2_BLE_ACTION_SEND_BROADCAST | AP2_BLE_ACTION_SEND_CONNECT);
+    const ap2_ble_actions_t command_actions  = actions & (AP2_BLE_ACTION_SEND_BROADCAST | AP2_BLE_ACTION_SEND_CONNECT);
+    const ap2_ble_actions_t deferred_actions = actions & (AP2_BLE_ACTION_SEND_SLOT_STATE | command_actions);
 
-    /*
-     * The AP2D slot preamble is deliberately gated here, at the C18 driver's
-     * profile boundary. BLE 2.05 and command retries retain their existing
-     * immediate byte sequence and timing.
-     */
-    if (ble_profile == ANNEPRO2_BLE_PROFILE_AP2D_213 && ap2_ble_213_slot_active(&ble_213_slot_state) && (actions & AP2_BLE_ACTION_ROUTE_USB) && command_actions == 0) {
-        AP2_BLE_LOG("cancel 213 slot prepare");
-        ap2_ble_213_slot_reset(&ble_213_slot_state);
+    if ((actions & AP2_BLE_ACTION_ROUTE_USB) && command_actions == 0) {
+        ap2_ble_protocol_cancel_command();
     }
 
-    if (command_actions != 0 && ap2_ble_213_slot_should_prepare(ble_profile, ble_state.command_retries)) {
-        const ap2_ble_actions_t deferred_actions = actions & (AP2_BLE_ACTION_SEND_SLOT_STATE | AP2_BLE_ACTION_SEND_BROADCAST | AP2_BLE_ACTION_SEND_CONNECT);
+    ap2_ble_protocol_step_t step;
+    if (command_actions != 0 && ap2_ble_protocol_begin_command(ble_state.selected_slot, ble_state.command_retries, deferred_actions, timer_read32(), &step)) {
         ap2_ble_execute_actions_now(actions & ~deferred_actions);
-        ap2_ble_execute_213_slot_actions(ap2_ble_213_slot_begin(&ble_213_slot_state, ble_state.selected_slot, deferred_actions, timer_read32()));
+        ap2_ble_send_protocol_step(&step);
         return;
     }
 
@@ -368,42 +321,41 @@ static void ap2_ble_execute_actions_now(ap2_ble_actions_t actions) {
     }
 }
 
-static void ap2_ble_execute_213_slot_actions(ap2_ble_213_slot_actions_t actions) {
-    uint8_t frame[AP2_BLE_213_SLOT_FRAME_MAX_SIZE];
-    uint8_t size;
+static void ap2_ble_send_protocol_step(const ap2_ble_protocol_step_t *step) {
+    if (step == NULL) {
+        return;
+    }
 
-    if (actions & AP2_BLE_213_SLOT_ACTION_QUERY) {
-        AP2_BLE_LOG("tx 213 slot query target=%u", ble_213_slot_state.target_slot);
-        size = ap2_ble_213_slot_encode_query(frame);
-        sdWrite(&SD1, frame, size);
-    }
-    if (actions & AP2_BLE_213_SLOT_ACTION_SELECT) {
-        AP2_BLE_LOG("tx 213 slot select=%u", ble_213_slot_state.target_slot);
-        size = ap2_ble_213_slot_encode_select(ble_213_slot_state.target_slot, frame);
-        sdWrite(&SD1, frame, size);
-    }
-    if (actions & AP2_BLE_213_SLOT_ACTION_PREPARE_1) {
-        AP2_BLE_LOG("tx 213 slot prepare=1");
-        size = ap2_ble_213_slot_encode_prepare(1, frame);
-        sdWrite(&SD1, frame, size);
-    }
-    if (actions & AP2_BLE_213_SLOT_ACTION_PREPARE_2) {
-        AP2_BLE_LOG("tx 213 slot prepare=2");
-        size = ap2_ble_213_slot_encode_prepare(2, frame);
-        sdWrite(&SD1, frame, size);
+    for (uint8_t i = 0; i < step->frame_count; i++) {
+        if (step->frames[i].size > 0) {
+            AP2_BLE_LOG("tx protocol preamble bytes=%u", step->frames[i].size);
+            sdWrite(&SD1, step->frames[i].data, step->frames[i].size);
+        }
     }
 }
 
 static void ap2_ble_send_broadcast(void) {
+    uint8_t frame[AP2_BLE_PROTOCOL_MAX_FRAME_SIZE];
+
     AP2_BLE_LOG("tx broadcast slot=%u attempt=%u", ble_state.selected_slot, ble_state.command_retries + 1);
-    sdWrite(&SD1, ble_mcu_start_broadcast, sizeof(ble_mcu_start_broadcast));
-    sdPut(&SD1, ble_state.selected_slot);
+    const uint8_t size = ap2_ble_protocol_encode_slot_command(true, ble_state.selected_slot, frame);
+    if (size == 0) {
+        return;
+    }
+    sdWrite(&SD1, frame, size);
+    ap2_ble_state_command_dispatched(&ble_state, timer_read32());
 }
 
 static void ap2_ble_send_connect(void) {
+    uint8_t frame[AP2_BLE_PROTOCOL_MAX_FRAME_SIZE];
+
     AP2_BLE_LOG("tx connect slot=%u attempt=%u", ble_state.selected_slot, ble_state.command_retries + 1);
-    sdWrite(&SD1, ble_mcu_connect, sizeof(ble_mcu_connect));
-    sdPut(&SD1, ble_state.selected_slot);
+    const uint8_t size = ap2_ble_protocol_encode_slot_command(false, ble_state.selected_slot, frame);
+    if (size == 0) {
+        return;
+    }
+    sdWrite(&SD1, frame, size);
+    ap2_ble_state_command_dispatched(&ble_state, timer_read32());
 }
 
 static void ap2_ble_send_slot_state(void) {
@@ -411,22 +363,20 @@ static void ap2_ble_send_slot_state(void) {
      * The stock firmware emits this state once before a slot action. It is not
      * part of the retried 0x40/0x01 or 0x40/0x04 transaction.
      */
-    annepro2_ble_slot_state_t slot_state;
-    if (!annepro2_ble_encode_slot_state(ble_profile, ble_state.command_slot_broadcast, &slot_state)) {
+    uint8_t       frame[AP2_BLE_PROTOCOL_MAX_FRAME_SIZE];
+    const uint8_t size = ap2_ble_protocol_encode_slot_state(ble_state.command_slot_broadcast, ble_state.selected_slot, frame);
+    if (size == 0) {
         return;
     }
 
-    AP2_BLE_LOG("tx slot state command=%02X action=%u", slot_state.command, slot_state.action);
-    ble_mcu_slot_state[9] = slot_state.command;
-    sdWrite(&SD1, ble_mcu_slot_state, sizeof(ble_mcu_slot_state));
-    sdPut(&SD1, ble_state.selected_slot);
-    sdPut(&SD1, slot_state.action);
+    AP2_BLE_LOG("tx slot state bytes=%u", size);
+    sdWrite(&SD1, frame, size);
 }
 
 static void ap2_ble_handle_command_ack(uint8_t command, uint8_t value) {
     const ap2_ble_state_id_t before = ble_state.state;
     AP2_BLE_LOG("rx command ack=%02X value=%02X state=%u", command, value, (unsigned)before);
-    ap2_ble_execute_actions(ap2_ble_state_command_ack(&ble_state, command, timer_read32()));
+    ap2_ble_execute_actions(ap2_ble_state_command_ack(&ble_state, command, value, timer_read32()));
     if (before == ble_state.state) {
         AP2_BLE_LOG("ignore stale command ack=%02X", command);
     }
@@ -472,13 +422,9 @@ static void ap2_ble_handle_rx_frame(const uint8_t *frame, uint8_t size) {
     if (size >= 11 && frame[1] == 0x12 && frame[2] == 0x35) {
         AP2_BLE_LOG("rx decoded group=%02X command=%02X value=%02X state=%u", frame[8], frame[9], frame[10], (unsigned)ble_state.state);
 
-        uint8_t current_slot;
-        if (ble_profile == ANNEPRO2_BLE_PROFILE_AP2D_213 && ap2_ble_213_slot_decode_response(frame, size, &current_slot)) {
-            AP2_BLE_LOG("rx 213 current slot=%u", current_slot);
-            ap2_ble_213_slot_response(&ble_213_slot_state, current_slot);
-        }
+        ap2_ble_protocol_receive_frame(frame, size);
 
-        if (frame[4] == 0x03 && frame[5] == 0x00 && frame[8] == 0x40 && (frame[9] == 0x01 || frame[9] == 0x04)) {
+        if (size == 11 && frame[4] == 0x03 && frame[5] == 0x00 && frame[6] == 0x00 && frame[8] == 0x40 && (frame[9] == 0x01 || frame[9] == 0x04)) {
             ap2_ble_handle_command_ack(frame[9], frame[10]);
         }
 
@@ -488,15 +434,17 @@ static void ap2_ble_handle_rx_frame(const uint8_t *frame, uint8_t size) {
          */
         if (frame[4] == 0x03 && frame[5] == 0x00 && frame[8] == 0x20 && frame[9] == 0x07) {
             bool caps_lock;
-            if (annepro2_ble_decode_caps_lock(frame, size, &caps_lock)) {
+            if (ap2_ble_decode_caps_lock(frame, size, &caps_lock)) {
                 ble_led_state.caps_lock = caps_lock;
                 AP2_BLE_LOG("rx caps lock=%u leds=%02X", caps_lock, ble_led_state.raw);
             } else {
                 AP2_BLE_LOG("ignore invalid caps lock value=%02X", frame[10]);
             }
             AP2_BLE_LOG("tx state sync response value=%02X", frame[10]);
-            sdWrite(&SD1, ble_mcu_state_sync_response, sizeof(ble_mcu_state_sync_response));
-            sdPut(&SD1, frame[10]);
+            uint8_t response[sizeof(ble_mcu_state_sync_response) + 1];
+            memcpy(response, ble_mcu_state_sync_response, sizeof(ble_mcu_state_sync_response));
+            response[sizeof(ble_mcu_state_sync_response)] = frame[10];
+            sdWrite(&SD1, response, sizeof(response));
         }
 
         /*
@@ -506,10 +454,13 @@ static void ap2_ble_handle_rx_frame(const uint8_t *frame, uint8_t size) {
          * 0x40/0x01 and 0x40/0x04 are command acknowledgements and must not
          * change QMK's host driver.
          */
-        if (frame[4] == 0x03 && frame[5] == 0x00 && frame[8] == 0x20 && frame[9] == 0x0c) {
+        if (size == 11 && frame[4] == 0x03 && frame[5] == 0x00 && frame[6] == 0x00 && frame[8] == 0x20 && frame[9] == 0x0c) {
             AP2_BLE_LOG("tx hid handshake response");
             sdWrite(&SD1, ble_mcu_hid_handshake_response, sizeof(ble_mcu_hid_handshake_response));
-            const ap2_ble_actions_t actions = ap2_ble_state_handshake(&ble_state);
+            const ap2_ble_actions_t actions = frame[10] == 0 ? ap2_ble_state_handshake(&ble_state) : AP2_BLE_ACTION_NONE;
+            if (frame[10] != 0) {
+                AP2_BLE_LOG("ignore hid handshake value=%02X", frame[10]);
+            }
             if (actions & AP2_BLE_ACTION_ROUTE_BLE) {
                 AP2_BLE_LOG("rx hid handshake ready");
             }
@@ -518,6 +469,19 @@ static void ap2_ble_handle_rx_frame(const uint8_t *frame, uint8_t size) {
     } else {
         AP2_BLE_LOG("rx frame len=%u type=%02X/%02X", size, frame[1], frame[2]);
     }
+}
+
+static bool ap2_ble_decode_caps_lock(const uint8_t *frame, uint8_t size, bool *caps_lock) {
+    static const uint8_t prefix[] = {
+        0x7B, 0x12, 0x35, 0x00, 0x03, 0x00, 0x00, 0x7D, 0x20, 0x07,
+    };
+
+    if (frame == NULL || caps_lock == NULL || size != sizeof(prefix) + 1 || memcmp(frame, prefix, sizeof(prefix)) != 0 || frame[sizeof(prefix)] > 1) {
+        return false;
+    }
+
+    *caps_lock = frame[sizeof(prefix)] != 0;
+    return true;
 }
 
 #if defined(CONSOLE_ENABLE) && defined(ANNEPRO2_BLE_DEBUG)
@@ -535,29 +499,25 @@ static void ap2_ble_reset_rx_parser(void) {
 }
 
 static int8_t ap2_ble_read_saved_slot(void) {
-    const uint32_t         config = eeconfig_read_kb();
-    int8_t                 slot;
-    annepro2_ble_profile_t profile;
+    const uint32_t config = eeconfig_read_kb();
+    int8_t         slot;
 
-    if (annepro2_ble_decode_config(config, &profile, &slot) && ap2_ble_profile_supported(profile)) {
+    if (annepro2_ble_slot_config_decode(ANNEPRO2_BLE_EECONFIG_TAG, config, &slot)) {
         return slot;
     }
 
-#ifdef ANNEPRO2_BLE_FIXED_PROFILE
+    /* Erase legacy dual-profile and cross-model records on first startup. */
+    ap2_ble_write_config(-1);
     return -1;
-#else
-    /* Migrate the legacy QMK encoding: zero disables, 1..4 select slots 0..3. */
-    return config >= 1 && config <= 4 ? (int8_t)config - 1 : -1;
-#endif
 }
 
 static void ap2_ble_save_slot(int8_t slot) {
-    ap2_ble_write_config(slot, ble_profile);
+    ap2_ble_write_config(slot);
 }
 
-static void ap2_ble_write_config(int8_t slot, annepro2_ble_profile_t profile) {
+static void ap2_ble_write_config(int8_t slot) {
     uint32_t config;
-    if (!annepro2_ble_encode_config(profile, slot, &config)) {
+    if (!annepro2_ble_slot_config_encode(ANNEPRO2_BLE_EECONFIG_TAG, slot, &config)) {
         return;
     }
 
@@ -566,38 +526,51 @@ static void ap2_ble_write_config(int8_t slot, annepro2_ble_profile_t profile) {
     }
 }
 
-static bool ap2_ble_profile_supported(annepro2_ble_profile_t profile) {
-#ifdef ANNEPRO2_BLE_FIXED_PROFILE
-    return profile == ANNEPRO2_BLE_FIXED_PROFILE;
-#else
-    return profile == ANNEPRO2_BLE_PROFILE_C18_205 || profile == ANNEPRO2_BLE_PROFILE_AP2D_213;
-#endif
-}
-
 static uint8_t ap2_ble_leds(void) {
     return ble_led_state.raw;
 }
 
-static void ap2_ble_mouse(report_mouse_t *report) {}
+static void ap2_ble_mouse(report_mouse_t *report) {
+    uint8_t frame[1 + AP2_BLE_PROTOCOL_MOUSE_FRAME_SIZE];
+    uint8_t loss_flags;
+
+    if (report == NULL) {
+        return;
+    }
+
+    /* Keep the UART resynchronization byte and the complete frame atomic. */
+    frame[0]                 = 0;
+    const uint8_t frame_size = ap2_ble_protocol_encode_mouse(report->buttons, report->x, report->y, report->v, report->h, &frame[1], &loss_flags);
+    if (frame_size == 0) {
+        return;
+    }
+
+    sdWrite(&SD1, frame, 1 + frame_size);
+    if (loss_flags != 0) {
+        AP2_BLE_LOG("mouse lossy=%02X buttons=%02X x=%d y=%d v=%d h=%d", loss_flags, report->buttons, report->x, report->y, report->v, report->h);
+    }
+}
 
 static void ap2_ble_extra(report_extra_t *report) {
     if (report->report_id == REPORT_ID_CONSUMER) {
-        uint8_t        payload[ANNEPRO2_BLE_CONSUMER_MAX_SIZE];
+        uint8_t        payload[AP2_BLE_PROTOCOL_MAX_CONSUMER_SIZE];
+        uint8_t        frame[1 + sizeof(ble_mcu_send_consumer_report) + AP2_BLE_PROTOCOL_MAX_CONSUMER_SIZE];
         uint8_t        payload_size;
         const uint16_t usage       = report->usage;
         const size_t   usage_count = usage == 0 ? 0 : 1;
 
-        if (!annepro2_ble_encode_consumer(ble_profile, &usage, usage_count, payload, &payload_size)) {
-            AP2_BLE_LOG("consumer unsupported usage=%04X profile=%u", usage, (unsigned)ble_profile);
-            annepro2_ble_encode_consumer(ble_profile, &usage, 0, payload, &payload_size);
+        if (!ap2_ble_protocol_encode_consumer(&usage, usage_count, payload, &payload_size)) {
+            AP2_BLE_LOG("consumer unsupported usage=%04X", usage);
+            ap2_ble_protocol_encode_consumer(NULL, 0, payload, &payload_size);
         }
 
         /* UART payload includes the 0x10/0x08 group and command bytes. */
-        ble_mcu_send_consumer_report[4] = payload_size + 2;
-        sdPut(&SD1, 0x0);
-        sdWrite(&SD1, ble_mcu_send_consumer_report, sizeof(ble_mcu_send_consumer_report));
-        sdWrite(&SD1, payload, payload_size);
-        AP2_BLE_LOG("tx consumer usage=%04X bytes=%u profile=%u", usage, payload_size, (unsigned)ble_profile);
+        frame[0] = 0;
+        memcpy(&frame[1], ble_mcu_send_consumer_report, sizeof(ble_mcu_send_consumer_report));
+        frame[5] = payload_size + 2;
+        memcpy(&frame[1 + sizeof(ble_mcu_send_consumer_report)], payload, payload_size);
+        sdWrite(&SD1, frame, 1 + sizeof(ble_mcu_send_consumer_report) + payload_size);
+        AP2_BLE_LOG("tx consumer usage=%04X bytes=%u", usage, payload_size);
     }
 }
 
@@ -605,9 +578,11 @@ static void ap2_ble_extra(report_extra_t *report) {
  * @brief  Send keyboard HID report for Bluetooth driver
  */
 static void ap2_ble_keyboard(report_keyboard_t *report) {
-    sdPut(&SD1, 0x0);
-    sdWrite(&SD1, ble_mcu_send_report, sizeof(ble_mcu_send_report));
-    sdWrite(&SD1, (uint8_t *)report, KEYBOARD_REPORT_SIZE);
+    uint8_t frame[1 + sizeof(ble_mcu_send_report) + KEYBOARD_REPORT_SIZE];
+    frame[0] = 0;
+    memcpy(&frame[1], ble_mcu_send_report, sizeof(ble_mcu_send_report));
+    memcpy(&frame[1 + sizeof(ble_mcu_send_report)], report, KEYBOARD_REPORT_SIZE);
+    sdWrite(&SD1, frame, sizeof(frame));
 #if defined(CONSOLE_ENABLE) && defined(ANNEPRO2_BLE_DEBUG)
     if (ble_debug_keyboard_reports < 3) {
         ble_debug_keyboard_reports++;

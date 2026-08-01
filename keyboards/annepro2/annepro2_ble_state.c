@@ -24,21 +24,25 @@ static void clear_transient_state(ap2_ble_state_t *state) {
     state->handshake_recoveries       = 0;
     state->handshake_timeout_enabled  = false;
     state->command_slot_state_pending = false;
+    state->command_is_broadcast       = false;
+    state->command_armed              = false;
     state->startup_slot               = -1;
     state->held_slot                  = -1;
     state->held_slot_broadcast        = false;
     state->pending_slot               = -1;
 }
 
-static ap2_ble_actions_t start_broadcast(ap2_ble_state_t *state, uint8_t slot, int8_t slot_state, bool handshake_timeout, uint32_t now) {
+static ap2_ble_actions_t start_broadcast(ap2_ble_state_t *state, uint8_t slot, int8_t slot_state, bool handshake_timeout) {
     state->state                      = AP2_BLE_STATE_WAIT_BROADCAST_ACK;
     state->startup_slot               = -1;
     state->selected_slot              = clamp_slot(slot);
     state->command_slot_state_pending = slot_state >= 0;
     state->command_slot_broadcast     = slot_state > 0;
+    state->command_is_broadcast       = true;
+    state->command_armed              = false;
     state->handshake_timeout_enabled  = handshake_timeout;
     state->command_retries            = 0;
-    state->command_timer              = now;
+    state->output                     = AP2_BLE_OUTPUT_USB;
 
     ap2_ble_actions_t actions = AP2_BLE_ACTION_ROUTE_USB | AP2_BLE_ACTION_SEND_BROADCAST;
     if (state->command_slot_state_pending) {
@@ -48,15 +52,17 @@ static ap2_ble_actions_t start_broadcast(ap2_ble_state_t *state, uint8_t slot, i
     return actions;
 }
 
-static ap2_ble_actions_t start_connect(ap2_ble_state_t *state, uint8_t slot, uint32_t now) {
+static ap2_ble_actions_t start_connect(ap2_ble_state_t *state, uint8_t slot) {
     state->state                      = AP2_BLE_STATE_WAIT_CONNECT_ACK;
     state->startup_slot               = -1;
     state->selected_slot              = clamp_slot(slot);
     state->command_slot_state_pending = false;
     state->command_slot_broadcast     = false;
+    state->command_is_broadcast       = false;
+    state->command_armed              = false;
     state->handshake_timeout_enabled  = true;
     state->command_retries            = 0;
-    state->command_timer              = now;
+    state->output                     = AP2_BLE_OUTPUT_USB;
     return AP2_BLE_ACTION_ROUTE_USB | AP2_BLE_ACTION_SEND_SLOT_STATE | AP2_BLE_ACTION_SEND_CONNECT;
 }
 
@@ -69,15 +75,18 @@ static void queue_intent(ap2_ble_state_t *state, uint8_t slot, bool broadcast, u
     state->state                      = AP2_BLE_STATE_USB;
     state->command_retries            = 0;
     state->command_slot_state_pending = false;
+    state->command_armed              = false;
     state->handshake_timeout_enabled  = false;
     state->pending_slot               = clamp_slot(slot);
     state->pending_broadcast          = broadcast;
     state->pending_timer              = now;
+    state->output                     = AP2_BLE_OUTPUT_USB;
 }
 
 void ap2_ble_state_reset(ap2_ble_state_t *state) {
     memset(state, 0, sizeof(*state));
     state->state        = AP2_BLE_STATE_USB;
+    state->output       = AP2_BLE_OUTPUT_USB;
     state->startup_slot = -1;
     state->held_slot    = -1;
     state->pending_slot = -1;
@@ -105,17 +114,16 @@ ap2_ble_actions_t ap2_ble_state_connect(ap2_ble_state_t *state, uint8_t slot, ui
         return AP2_BLE_ACTION_ROUTE_USB;
     }
     if (ap2_ble_state_operation_pending(state)) {
-        if (state->selected_slot == slot) {
-            state->pending_slot = -1;
-        } else {
-            queue_intent(state, slot, false, now);
+        if (state->state == AP2_BLE_STATE_WAIT_CONNECT_ACK && state->selected_slot == slot && !state->command_is_broadcast && !state->command_armed) {
+            return AP2_BLE_ACTION_NONE;
         }
+        queue_intent(state, slot, false, now);
         return AP2_BLE_ACTION_ROUTE_USB;
     }
 
     state->pending_slot         = -1;
     state->handshake_recoveries = 0;
-    return start_connect(state, slot, now);
+    return start_connect(state, slot);
 }
 
 ap2_ble_actions_t ap2_ble_state_broadcast(ap2_ble_state_t *state, uint8_t slot, uint32_t now) {
@@ -129,13 +137,16 @@ ap2_ble_actions_t ap2_ble_state_broadcast(ap2_ble_state_t *state, uint8_t slot, 
         return AP2_BLE_ACTION_ROUTE_USB;
     }
     if (ap2_ble_state_operation_pending(state)) {
+        if (state->state == AP2_BLE_STATE_WAIT_BROADCAST_ACK && state->selected_slot == slot && state->command_is_broadcast && !state->command_armed) {
+            return AP2_BLE_ACTION_NONE;
+        }
         queue_intent(state, slot, true, now);
         return AP2_BLE_ACTION_ROUTE_USB;
     }
 
     state->pending_slot         = -1;
     state->handshake_recoveries = 0;
-    return start_broadcast(state, slot, 1, false, now);
+    return start_broadcast(state, slot, 1, false);
 }
 
 ap2_ble_actions_t ap2_ble_state_slot_press(ap2_ble_state_t *state, uint8_t slot, uint32_t now) {
@@ -174,7 +185,7 @@ ap2_ble_actions_t ap2_ble_state_task(ap2_ble_state_t *state, uint32_t now) {
 
     if (state->startup_slot >= 0 && elapsed(now, state->startup_timer) >= ANNEPRO2_BLE_STARTUP_DELAY) {
         const uint8_t slot = (uint8_t)state->startup_slot;
-        actions |= start_broadcast(state, slot, -1, true, now);
+        actions |= start_broadcast(state, slot, -1, true);
     }
 
     if (state->pending_slot >= 0 && elapsed(now, state->pending_timer) >= ANNEPRO2_BLE_SLOT_SWITCH_DELAY) {
@@ -185,7 +196,9 @@ ap2_ble_actions_t ap2_ble_state_task(ap2_ble_state_t *state, uint32_t now) {
         state->handshake_timeout_enabled  = false;
         state->handshake_recoveries       = 0;
         state->state                      = AP2_BLE_STATE_USB;
-        actions |= broadcast ? start_broadcast(state, slot, 1, false, now) : start_connect(state, slot, now);
+        state->output                     = AP2_BLE_OUTPUT_USB;
+        state->command_armed              = false;
+        actions |= broadcast ? start_broadcast(state, slot, 1, false) : start_connect(state, slot);
     }
 
     if (state->state == AP2_BLE_STATE_WAIT_HANDSHAKE) {
@@ -194,7 +207,9 @@ ap2_ble_actions_t ap2_ble_state_task(ap2_ble_state_t *state, uint32_t now) {
         }
 
         state->state                      = AP2_BLE_STATE_USB;
+        state->output                     = AP2_BLE_OUTPUT_USB;
         state->command_slot_state_pending = false;
+        state->command_armed              = false;
         state->handshake_timeout_enabled  = false;
         actions |= AP2_BLE_ACTION_ROUTE_USB;
         if (state->handshake_recoveries == 0) {
@@ -209,6 +224,9 @@ ap2_ble_actions_t ap2_ble_state_task(ap2_ble_state_t *state, uint32_t now) {
     }
 
     if (state->state != AP2_BLE_STATE_WAIT_BROADCAST_ACK && state->state != AP2_BLE_STATE_WAIT_CONNECT_ACK) {
+        return actions;
+    }
+    if (!state->command_armed) {
         return actions;
     }
     if (elapsed(now, state->command_timer) < ANNEPRO2_BLE_COMMAND_TIMEOUT) {
@@ -227,7 +245,18 @@ ap2_ble_actions_t ap2_ble_state_task(ap2_ble_state_t *state, uint32_t now) {
     return actions;
 }
 
-ap2_ble_actions_t ap2_ble_state_command_ack(ap2_ble_state_t *state, uint8_t command, uint32_t now) {
+void ap2_ble_state_command_dispatched(ap2_ble_state_t *state, uint32_t now) {
+    if (state->state != AP2_BLE_STATE_WAIT_BROADCAST_ACK && state->state != AP2_BLE_STATE_WAIT_CONNECT_ACK) {
+        return;
+    }
+    state->command_armed = true;
+    state->command_timer = now;
+}
+
+ap2_ble_actions_t ap2_ble_state_command_ack(ap2_ble_state_t *state, uint8_t command, uint8_t value, uint32_t now) {
+    if (!state->command_armed || value != 0) {
+        return AP2_BLE_ACTION_NONE;
+    }
     if ((command == 0x01 && state->state != AP2_BLE_STATE_WAIT_BROADCAST_ACK) || (command == 0x04 && state->state != AP2_BLE_STATE_WAIT_CONNECT_ACK)) {
         return AP2_BLE_ACTION_NONE;
     }
@@ -241,7 +270,8 @@ ap2_ble_actions_t ap2_ble_state_command_ack(ap2_ble_state_t *state, uint8_t comm
 }
 
 ap2_ble_actions_t ap2_ble_state_handshake(ap2_ble_state_t *state) {
-    if (!ap2_ble_state_route_requested(state)) {
+    const bool command_ready = (state->state == AP2_BLE_STATE_WAIT_BROADCAST_ACK || state->state == AP2_BLE_STATE_WAIT_CONNECT_ACK) && state->command_armed;
+    if (state->state != AP2_BLE_STATE_STARTUP_PASSIVE && state->state != AP2_BLE_STATE_WAIT_HANDSHAKE && !command_ready) {
         return AP2_BLE_ACTION_NONE;
     }
 
@@ -250,13 +280,16 @@ ap2_ble_actions_t ap2_ble_state_handshake(ap2_ble_state_t *state) {
     state->command_retries            = 0;
     state->handshake_recoveries       = 0;
     state->handshake_timeout_enabled  = false;
+    state->command_armed              = false;
     state->state                      = AP2_BLE_STATE_ACTIVE;
+    state->output                     = AP2_BLE_OUTPUT_BLE;
     return AP2_BLE_ACTION_ROUTE_BLE | AP2_BLE_ACTION_SAVE_SLOT;
 }
 
 ap2_ble_actions_t ap2_ble_state_disconnect(ap2_ble_state_t *state) {
     clear_transient_state(state);
-    state->state = AP2_BLE_STATE_USB;
+    state->state  = AP2_BLE_STATE_USB;
+    state->output = AP2_BLE_OUTPUT_USB;
     return AP2_BLE_ACTION_ROUTE_USB | AP2_BLE_ACTION_CLEAR_SLOT;
 }
 
@@ -264,15 +297,16 @@ ap2_ble_actions_t ap2_ble_state_unpair(ap2_ble_state_t *state) {
     return AP2_BLE_ACTION_SEND_UNPAIR | ap2_ble_state_disconnect(state);
 }
 
-ap2_ble_actions_t ap2_ble_state_toggle_output(const ap2_ble_state_t *state, bool output_is_ble) {
+ap2_ble_actions_t ap2_ble_state_toggle_output(ap2_ble_state_t *state) {
     if (state->state != AP2_BLE_STATE_ACTIVE) {
         return AP2_BLE_ACTION_NONE;
     }
-    return output_is_ble ? AP2_BLE_ACTION_ROUTE_USB : AP2_BLE_ACTION_ROUTE_BLE;
-}
-
-bool ap2_ble_state_route_requested(const ap2_ble_state_t *state) {
-    return state->state != AP2_BLE_STATE_USB;
+    if (state->output == AP2_BLE_OUTPUT_BLE) {
+        state->output = AP2_BLE_OUTPUT_USB;
+        return AP2_BLE_ACTION_ROUTE_USB;
+    }
+    state->output = AP2_BLE_OUTPUT_BLE;
+    return AP2_BLE_ACTION_ROUTE_BLE;
 }
 
 bool ap2_ble_state_operation_pending(const ap2_ble_state_t *state) {

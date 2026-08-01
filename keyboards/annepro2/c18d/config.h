@@ -1,18 +1,11 @@
 /*
  * Copyright (c) 2018 Charlie Waters
+ * Copyright 2026 BHE
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 2 of the License, or
  * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #pragma once
@@ -21,10 +14,7 @@
 
 #define ANNEPRO2_LED_MCU_ENABLE
 
-/*
- * C18 is permanently paired with its stock BLE 2.05 protocol. BLE 2.13
- * compatibility lives in the separate C18D target.
- */
+/* C18D is the C18-layout target permanently paired with BLE 2.13. */
 #define ANNEPRO2_VENDOR_HID_ENABLE
 #define ANNEPRO2_BLE_ASYNC_STARTUP
 #define RAW_EPSIZE 64
@@ -32,8 +22,8 @@
 #define ANNEPRO2_KEY_FW_VERSION_MINOR 37
 #define ANNEPRO2_LED_FW_VERSION_MAJOR 2
 #define ANNEPRO2_LED_FW_VERSION_MINOR 33
-#define ANNEPRO2_BLE_FW_VERSION_MINOR 5
-#define ANNEPRO2_BLE_EECONFIG_TAG 0x18
+#define ANNEPRO2_BLE_FW_VERSION_MINOR 13
+#define ANNEPRO2_BLE_EECONFIG_TAG 0x1D
 
 #define LINE_UART_TX B0
 #define LINE_UART_RX B1
@@ -41,19 +31,16 @@
 #define LINE_BT_UART_TX A4 // Master TX, BLE RX
 #define LINE_BT_UART_RX A5 // Master RX, BLE TX
 
-// Obins stock firmware has something similar to this already enabled, but disabled by default in QMK
 #define PERMISSIVE_HOLD
 
-// SPI configuration
 #define SPI_DRIVER SPID1
 #define SPI_SCK_PIN A0
 #define SPI_MOSI_PIN A1
 #define SPI_MISO_PIN A2
 
-// Flash configuration
 #define EXTERNAL_FLASH_SPI_SLAVE_SELECT_PIN A3
 #define EXTERNAL_FLASH_SPI_CLOCK_DIVISOR 16
 #define EXTERNAL_FLASH_PAGE_SIZE 256
 #define EXTERNAL_FLASH_SECTOR_SIZE 4096
 #define EXTERNAL_FLASH_BLOCK_SIZE 4096
-#define EXTERNAL_FLASH_SIZE (256 * 1024) // 2M-bit flash size
+#define EXTERNAL_FLASH_SIZE (256 * 1024)

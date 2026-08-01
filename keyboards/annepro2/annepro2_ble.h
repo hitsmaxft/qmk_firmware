@@ -17,7 +17,6 @@
 #pragma once
 
 #include "annepro2.h"
-#include "annepro2_ble_profile.h"
 
 typedef enum {
     ANNEPRO2_BLE_STATUS_IDLE,
@@ -27,18 +26,16 @@ typedef enum {
     ANNEPRO2_BLE_STATUS_FAILED,
 } annepro2_ble_status_t;
 
-void                   annepro2_ble_bootload(void);
-void                   annepro2_ble_startup(void);
-void                   annepro2_ble_broadcast(uint8_t port);
-void                   annepro2_ble_connect(uint8_t port);
-void                   annepro2_ble_slot_press(uint8_t port);
-void                   annepro2_ble_slot_release(uint8_t port);
-void                   annepro2_ble_disconnect(void);
-void                   annepro2_ble_unpair(void);
-bool                   annepro2_ble_toggle_output(void);
-void                   annepro2_ble_task(void);
-annepro2_ble_profile_t annepro2_ble_get_profile(void);
-void                   annepro2_ble_set_profile(annepro2_ble_profile_t profile);
+void annepro2_ble_bootload(void);
+void annepro2_ble_startup(void);
+void annepro2_ble_broadcast(uint8_t port);
+void annepro2_ble_connect(uint8_t port);
+void annepro2_ble_slot_press(uint8_t port);
+void annepro2_ble_slot_release(uint8_t port);
+void annepro2_ble_disconnect(void);
+void annepro2_ble_unpair(void);
+bool annepro2_ble_toggle_output(void);
+void annepro2_ble_task(void);
 #ifdef ANNEPRO2_VENDOR_HID_ENABLE
 bool annepro2_ble_send_raw_hid_usb(uint8_t *data, uint8_t length);
 #endif
