@@ -9,7 +9,7 @@ from enum import IntFlag
 
 from milc import cli
 
-from qmk.constants import COL_LETTERS, ROW_LETTERS, CHIBIOS_PROCESSORS, LUFA_PROCESSORS, VUSB_PROCESSORS, JOYSTICK_AXES
+from qmk.constants import COL_LETTERS, ROW_LETTERS, CHIBIOS_PROCESSORS, CH58X_RUST_PROCESSORS, LUFA_PROCESSORS, VUSB_PROCESSORS, JOYSTICK_AXES
 from qmk.c_parse import find_layouts, parse_config_h_file, find_led_config
 from qmk.json_schema import deep_update, json_load, validate
 from qmk.keyboard import config_h, rules_mk
@@ -744,6 +744,9 @@ def _extract_rules_mk(info_data, rules):
     if info_data['processor'] in CHIBIOS_PROCESSORS:
         arm_processor_rules(info_data, rules)
 
+    elif info_data['processor'] in CH58X_RUST_PROCESSORS:
+        ch58x_rust_processor_rules(info_data, rules)
+
     elif info_data['processor'] in LUFA_PROCESSORS + VUSB_PROCESSORS:
         avr_processor_rules(info_data, rules)
 
@@ -976,6 +979,16 @@ def arm_processor_rules(info_data, rules):
         info_data['platform'] = 'STM32'
     elif 'MCU_SERIES' in rules:
         info_data['platform'] = rules['MCU_SERIES']
+
+    return info_data
+
+
+def ch58x_rust_processor_rules(info_data, rules):
+    """Set metadata for the Rust-owned CH58x runtime and ChibiOS facade."""
+    info_data['processor_type'] = 'riscv'
+    info_data['platform'] = 'CH58x Rust'
+    info_data['platform_key'] = 'ch58x_rust'
+    info_data['protocol'] = 'CHIBIOS_RUST'
 
     return info_data
 

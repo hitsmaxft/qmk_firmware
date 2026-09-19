@@ -1,0 +1,30 @@
+[package]
+name = "imk64-ch582-qmk"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.87"
+license = "GPL-2.0-or-later"
+publish = false
+
+[dependencies]
+critical-section = { version = "1.2", features = ["restore-state-bool"] }
+embassy-ch58x-rs = { git = "https://github.com/rusted-ch5/embassy-ch58x.git", rev = "e4b64fde2f3d2e1c0d566d56b3558d8cb605dbab", default-features = false, features = ["ch582", "gpio", "time-driver", "usb"] }
+embassy-executor = { version = "0.9", features = ["executor-thread"] }
+embassy-futures = "0.1"
+embassy-sync = "0.8"
+embassy-time = { version = "0.5", features = ["tick-hz-1_000_000"] }
+embassy-usb = "0.6"
+embedded-hal = "1.0"
+portable-atomic = { version = "1.15", features = ["critical-section"] }
+qingke_rs = { package = "qingke-rs", git = "https://github.com/rusted-ch5/qingke-rs.git", rev = "9f2eed7594eb6ea8cd4ae9504e4023698ce05fcd", default-features = false, features = ["highcode", "v4"] }
+static_cell = "2"
+
+[profile.release]
+codegen-units = 1
+debug = 1
+lto = "fat"
+opt-level = "s"
+panic = "abort"
+
+[profile.dev]
+panic = "abort"
