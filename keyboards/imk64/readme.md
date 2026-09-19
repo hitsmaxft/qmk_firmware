@@ -16,8 +16,17 @@ PB7, PB14, PB15, PB16, PB17, PB8, PB9, PA8, PB18, PB19, and PB20 as pull-down
 columns. The default two-layer keymap mirrors the rusted-ch5
 `examples/rmk-ch582m` example.
 
-Each keyboard is built from its own QMK branch. After checking out the imk64
-branch, build its complete Rust-linked firmware with:
+Each keyboard is built from its own QMK branch. From any checkout of this fork,
+select the keyboard and its branch explicitly with:
+
+```sh
+util/build-keyboard-branch.sh imk64 default origin/imk64
+```
+
+The selector defaults to `origin/<keyboard>`, creates a disposable worktree,
+verifies exact submodule revisions, and calls the build contract stored on that
+keyboard's branch. After checking out the imk64 branch directly, the same
+complete Rust-linked firmware can be built with:
 
 ```sh
 keyboards/imk64/tools/build.sh
