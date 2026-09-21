@@ -8,7 +8,7 @@ extern crate qingke_rs as qingke_rt;
 
 use core::ptr;
 
-use embassy_ch58x::gpio::{AnyPin, Drive, Input, Level, Output, Pins, Pull};
+use embassy_ch58x::gpio::{AnyPin, Drive, Flex, Input, Level, Pins, Pull};
 use embassy_futures::join::join3;
 use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
 use embassy_sync::channel::{Channel, TrySendError};
@@ -19,7 +19,7 @@ use embassy_usb::class::hid::{
 };
 use embassy_usb::control::OutResponse;
 use embassy_usb::{Builder, Config, Handler};
-use embedded_hal::digital::{InputPin, OutputPin};
+use embedded_hal::digital::InputPin;
 use portable_atomic::{AtomicBool, AtomicU8, AtomicU16, AtomicU32, Ordering};
 use static_cell::StaticCell;
 
@@ -49,8 +49,8 @@ static MATRIX_GENERATION: AtomicU32 = AtomicU32::new(0);
 static MATRIX_READY: AtomicBool = AtomicBool::new(false);
 
 struct Imk64Matrix {
-    rows: [Output<AnyPin>; MATRIX_ROW_COUNT],
-    cols: [Input<AnyPin>; MATRIX_COL_COUNT],
+    rows: [Input<AnyPin>; MATRIX_ROW_COUNT],
+    cols: [Flex<AnyPin>; MATRIX_COL_COUNT],
 }
 
 #[repr(C)]
@@ -165,15 +165,21 @@ impl RequestHandler for KeyboardRequestHandler {
 async fn matrix_task(mut matrix: Imk64Matrix) {
     loop {
         let mut snapshot = [0u16; MATRIX_ROW_COUNT];
-        for (row_index, row) in matrix.rows.iter_mut().enumerate() {
-            let _ = row.set_high();
+
+        // imk64 is wired ROW2COL: select one column low, then read the
+        // pulled-up rows. Leave every unselected column as a pulled-up input,
+        // matching QMK's generic matrix scanner and avoiding drive conflicts
+        // when multiple keys are held.
+        for (col_index, col) in matrix.cols.iter_mut().enumerate() {
+            col.set_level(Level::Low);
+            col.set_as_output(Drive::MilliAmps5);
             Timer::after_micros(1).await;
-            for (col_index, col) in matrix.cols.iter_mut().enumerate() {
-                if col.is_high().unwrap_or(false) {
+            for (row_index, row) in matrix.rows.iter_mut().enumerate() {
+                if row.is_low().unwrap_or(false) {
                     snapshot[row_index] |= 1u16 << col_index;
                 }
             }
-            let _ = row.set_low();
+            col.set_as_input(Pull::Up);
         }
 
         // Publish a coherent 5-row snapshot. QMK's synchronous facade only
@@ -299,30 +305,34 @@ async fn usb_task(driver: embassy_ch58x::usb::Driver<'static>) -> ! {
 fn main() -> ! {
     let peripherals = embassy_ch58x::init(Default::default());
     let pins = Pins::new(peripherals.GPIOA, peripherals.GPIOB);
+    let mut cols = [
+        Flex::new(pins.pb4.degrade()),
+        Flex::new(pins.pb5.degrade()),
+        Flex::new(pins.pb6.degrade()),
+        Flex::new(pins.pb7.degrade()),
+        Flex::new(pins.pb14.degrade()),
+        Flex::new(pins.pb15.degrade()),
+        Flex::new(pins.pb16.degrade()),
+        Flex::new(pins.pb17.degrade()),
+        Flex::new(pins.pb8.degrade()),
+        Flex::new(pins.pb9.degrade()),
+        Flex::new(pins.pa8.degrade()),
+        Flex::new(pins.pb18.degrade()),
+        Flex::new(pins.pb19.degrade()),
+        Flex::new(pins.pb20.degrade()),
+    ];
+    for col in &mut cols {
+        col.set_as_input(Pull::Up);
+    }
     let matrix = Imk64Matrix {
         rows: [
-            Output::new(pins.pa1, Level::Low, Drive::MilliAmps5).degrade(),
-            Output::new(pins.pa2, Level::Low, Drive::MilliAmps5).degrade(),
-            Output::new(pins.pa3, Level::Low, Drive::MilliAmps5).degrade(),
-            Output::new(pins.pa4, Level::Low, Drive::MilliAmps5).degrade(),
-            Output::new(pins.pa5, Level::Low, Drive::MilliAmps5).degrade(),
+            Input::new(pins.pa1, Pull::Up).degrade(),
+            Input::new(pins.pa2, Pull::Up).degrade(),
+            Input::new(pins.pa3, Pull::Up).degrade(),
+            Input::new(pins.pa4, Pull::Up).degrade(),
+            Input::new(pins.pa5, Pull::Up).degrade(),
         ],
-        cols: [
-            Input::new(pins.pb4, Pull::Down).degrade(),
-            Input::new(pins.pb5, Pull::Down).degrade(),
-            Input::new(pins.pb6, Pull::Down).degrade(),
-            Input::new(pins.pb7, Pull::Down).degrade(),
-            Input::new(pins.pb14, Pull::Down).degrade(),
-            Input::new(pins.pb15, Pull::Down).degrade(),
-            Input::new(pins.pb16, Pull::Down).degrade(),
-            Input::new(pins.pb17, Pull::Down).degrade(),
-            Input::new(pins.pb8, Pull::Down).degrade(),
-            Input::new(pins.pb9, Pull::Down).degrade(),
-            Input::new(pins.pa8, Pull::Down).degrade(),
-            Input::new(pins.pb18, Pull::Down).degrade(),
-            Input::new(pins.pb19, Pull::Down).degrade(),
-            Input::new(pins.pb20, Pull::Down).degrade(),
-        ],
+        cols,
     };
 
     let driver = embassy_ch58x::usb::Driver::new(peripherals.USB, Irqs);

@@ -11,10 +11,11 @@ matrix settling uses Embassy timers, and delay-dependent send-string and
 lighting drivers are intentionally disabled. This prevents a C helper from
 starving USB and matrix futures.
 
-The 5x14 matrix uses PA1 through PA5 as active-high rows and PB4, PB5, PB6,
-PB7, PB14, PB15, PB16, PB17, PB8, PB9, PA8, PB18, PB19, and PB20 as pull-down
-columns. The default two-layer keymap mirrors the rusted-ch5
-`examples/rmk-ch582m` example.
+The 5x14 matrix follows the original imk64 `ROW2COL` wiring. PA1 through PA5
+are pulled-up row inputs. PB4, PB5, PB6, PB7, PB14, PB15, PB16, PB17, PB8,
+PB9, PA8, PB18, PB19, and PB20 are columns selected low one at a time and
+returned to pulled-up inputs when unselected. The default two-layer keymap
+mirrors the rusted-ch5 `examples/rmk-ch582m` example.
 
 Each keyboard is built from its own QMK branch. From any checkout of this fork,
 select the keyboard and its branch explicitly with:

@@ -71,4 +71,25 @@ rg -q 'for _ in 0\.\.2' "$keyboard/rust/src/main.rs" || {
     exit 1
 }
 
+matrix_task=$(sed -n '/async fn matrix_task/,/^}/p' "$keyboard/rust/src/main.rs")
+for pattern in \
+    'for \(col_index, col\) in matrix\.cols\.iter_mut\(\)\.enumerate\(\)' \
+    'col\.set_level\(Level::Low\)' \
+    'col\.set_as_output\(Drive::MilliAmps5\)' \
+    'row\.is_low\(\)' \
+    'col\.set_as_input\(Pull::Up\)'; do
+    rg -q "$pattern" <<<"$matrix_task" || {
+        echo "imk64 ROW2COL scan contract is missing: $pattern" >&2
+        exit 1
+    }
+done
+if rg -n 'row\.set_(high|low)|col\.is_high' <<<"$matrix_task"; then
+    echo "imk64 matrix scan regressed to the reversed COL2ROW implementation" >&2
+    exit 1
+fi
+rg -q 'Flex::new\(pins\.pb20\.degrade\(\)\)' "$keyboard/rust/src/main.rs" || {
+    echo "imk64 final column PB20 is missing" >&2
+    exit 1
+}
+
 echo "CH582 Rust/QMK host and source gates: PASS"
